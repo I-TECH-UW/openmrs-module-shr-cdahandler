@@ -7,7 +7,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import org.jfree.util.Log;
 import org.marc.everest.datatypes.ANY;
 import org.marc.everest.datatypes.BL;
 import org.marc.everest.datatypes.CO;
@@ -722,7 +721,7 @@ public final class OpenmrsConceptUtil extends OpenmrsMetadataUtil {
 		
 		if(concept == null && this.m_configuration.getAutoCreateConcepts())
 		{
-			Log.warn(String.format("Creating CDA RMIM concept %s", rmimUuid));
+			log.warn(String.format("Creating CDA RMIM concept %s", rmimUuid));
 			ConceptClass conceptClass = this.m_conceptService.getConceptClassByUuid(ConceptClass.MISC_UUID);
 			
 			ConceptDatatype datatype = this.getConceptDatatype(valueToStore);
@@ -858,7 +857,7 @@ public final class OpenmrsConceptUtil extends OpenmrsMetadataUtil {
 			this.m_openMrsUcumUnitMaps.put("months", "mon");
 					
 		} catch (DocumentImportException e) {
-			Log.error(e.getMessage(), e);
+			log.error(e.getMessage(), e);
 		}
 	}
 

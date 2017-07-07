@@ -2,7 +2,8 @@ package org.openmrs.module.shr.cdahandler.processor.util;
 
 import java.util.List;
 
-import org.jfree.util.Log;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.marc.everest.datatypes.AD;
 import org.marc.everest.datatypes.ON;
 import org.marc.everest.datatypes.TEL;
@@ -46,7 +47,8 @@ public final class LocationOrganizationProcessorUtil {
 
 
 	private final DatatypeProcessorUtil m_datatypeUtil = DatatypeProcessorUtil.getInstance();
-	
+
+	protected Log log = LogFactory.getLog(getClass());
 	/**
 	 * Private ctor
 	 */
@@ -235,13 +237,13 @@ public final class LocationOrganizationProcessorUtil {
 		if(organization.getId() != null)
 		{
 			id = this.m_datatypeUtil.formatIdentifier(organization.getId().get(0));
-			Log.debug(String.format("Finding organization by id %s", id));
+			log.debug(String.format("Finding organization by id %s", id));
 			res = this.getOrganizationByExternalId(id);
 		}
 		else if(organization.getName() != null && !organization.getName().isEmpty())
 		{
 			String orgName = organization.getName().get(0).toString();
-			Log.debug(String.format("Finding organization by name %s", orgName));
+			log.debug(String.format("Finding organization by name %s", orgName));
 			res = Context.getLocationService().getLocation(orgName);
 		}
 		else
