@@ -17,13 +17,7 @@ import java.io.InputStream;
 import java.util.List;
 
 import org.marc.everest.rmim.uv.cdar2.pocd_mt000040uv.ClinicalDocument;
-import org.openmrs.Concept;
-import org.openmrs.ConceptReferenceTerm;
-import org.openmrs.ConceptSource;
-import org.openmrs.Obs;
-import org.openmrs.Order;
-import org.openmrs.Visit;
-import org.openmrs.activelist.ActiveListItem;
+import org.openmrs.*;
 import org.openmrs.api.OpenmrsService;
 import org.openmrs.module.shr.cdahandler.exception.DocumentImportException;
 import org.openmrs.module.shr.cdahandler.obs.ExtendedObs;
@@ -84,16 +78,6 @@ public interface CdaImportService extends OpenmrsService {
 	 * Retrieves an extended observation 
 	 */
 	ExtendedObs getExtendedObs(Integer id);
-	
-	/**
-	 * Get an active list item by the accession number of its start or stop obs
-	 */
-	<T extends ActiveListItem> List<T> getActiveListItemByAccessionNumber(String accessionNumber, Class<T> clazz);
-
-	/**
-	 * Get active list items to which the Obs is associted
-	 */
-	<T extends ActiveListItem> List<T> getActiveListItemByObs(Obs obs, Class<T> clazz);
 
 	/**
 	 * Get concept source by hl7

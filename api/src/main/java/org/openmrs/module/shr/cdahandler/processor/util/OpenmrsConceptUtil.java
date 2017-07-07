@@ -213,7 +213,7 @@ public final class OpenmrsConceptUtil extends OpenmrsMetadataUtil {
 	/**
 	 * Create a concept with appropriate datatype to store the specified type of data
 	 * @param code The code representing the concept
-	 * @param type The type of data
+	 * @param value The type of data
 	 * @return The created concept
 	 * @throws DocumentImportException
 	 */
@@ -248,7 +248,7 @@ public final class OpenmrsConceptUtil extends OpenmrsMetadataUtil {
 			{
 				fullName += " (" + ((PQ)value).getUnit() + ")";
 				((ConceptNumeric)concept).setUnits(((PQ)value).getUnit());
-				((ConceptNumeric)concept).setPrecise(true);
+				((ConceptNumeric)concept).setAllowDecimal(true);
 				
 			}
 			mapType = this.m_narrowerThan;

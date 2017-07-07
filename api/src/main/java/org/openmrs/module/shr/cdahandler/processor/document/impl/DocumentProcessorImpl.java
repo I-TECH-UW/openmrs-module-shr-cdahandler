@@ -27,19 +27,12 @@ import org.marc.everest.rmim.uv.cdar2.pocd_mt000040uv.Section;
 import org.marc.everest.rmim.uv.cdar2.pocd_mt000040uv.ServiceEvent;
 import org.marc.everest.rmim.uv.cdar2.pocd_mt000040uv.StructuredBody;
 import org.marc.everest.rmim.uv.cdar2.vocabulary.x_ActRelationshipDocument;
-import org.openmrs.Encounter;
-import org.openmrs.EncounterRole;
-import org.openmrs.Obs;
-import org.openmrs.Order;
-import org.openmrs.Patient;
-import org.openmrs.Provider;
-import org.openmrs.Relationship;
-import org.openmrs.User;
-import org.openmrs.Visit;
-import org.openmrs.VisitAttribute;
-import org.openmrs.activelist.Allergy;
-import org.openmrs.activelist.Problem;
+import org.openmrs.*;
+import org.openmrs.Condition;
+import org.openmrs.api.PatientService;
 import org.openmrs.api.context.Context;
+import org.openmrs.module.emrapi.conditionslist.ConditionService;
+import org.openmrs.module.emrapi.conditionslist.contract.*;
 import org.openmrs.module.shr.cdahandler.CdaHandlerConstants;
 import org.openmrs.module.shr.cdahandler.api.CdaImportService;
 import org.openmrs.module.shr.cdahandler.configuration.CdaHandlerConfiguration;
@@ -419,12 +412,16 @@ public abstract class DocumentProcessorImpl implements DocumentProcessor {
 				Context.getObsService().voidObs(obs, voidReason);
 				if(obs.getAccessionNumber() != null)
 				{
+					Patient patient=new Patient(obs.getPerson());
 					// TODO: Validate this is the correct behavior?
-					for(Problem p : Context.getService(CdaImportService.class).getActiveListItemByObs(obs, Problem.class))
-						Context.getActiveListService().voidActiveListItem(p, voidReason);
-					for(Allergy a : Context.getService(CdaImportService.class).getActiveListItemByObs(obs, Allergy.class))
-						Context.getActiveListService().voidActiveListItem(a, voidReason);
-					//					Context.getActiveListService().voidActiveListItem(p, voidReason);
+					ConditionService conditionService=Context.getService(ConditionService.class);
+					for(Condition p : conditionService.getActiveConditions(patient)){
+						conditionService.voidCondition(p,voidReason);
+					}
+					PatientService allergyService=Context.getPatientService();
+					for(Allergy a: allergyService.getAllergies(new Patient(obs.getPerson()))){
+						allergyService.voidAllergy(a,voidReason);
+					}
 				}
 			}
 			for(Order ord : enc.getOrders())
@@ -439,7 +436,7 @@ public abstract class DocumentProcessorImpl implements DocumentProcessor {
 	 * Process content when the body choice is non-xml content
 	 * Auto generated method comment
 	 * 
-	 * @param bodyChoiceIfNonXMLBody
+	 * @param doc
 	 * @throws DocumentImportException 
 	 */
 	private Visit processLevel1Content(ClinicalDocument doc, Visit visitInformation) throws DocumentImportException {
@@ -524,7 +521,7 @@ public abstract class DocumentProcessorImpl implements DocumentProcessor {
 	
 	/**
 	 * Validate a clinical document instance
-	 * @param doc The clinical document to be validated
+	 * @param object The clinical document to be validated
 	 * @return True if the parsing of the clinical document should continue
 	 */
 	public ValidationIssueCollection validate(IGraphable object)

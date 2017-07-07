@@ -12,10 +12,9 @@ import org.marc.everest.rmim.uv.cdar2.pocd_mt000040uv.Reference;
 import org.marc.everest.rmim.uv.cdar2.vocabulary.ActStatus;
 import org.marc.everest.rmim.uv.cdar2.vocabulary.x_ActRelationshipExternalReference;
 import org.openmrs.BaseOpenmrsData;
+import org.openmrs.Condition;
 import org.openmrs.Encounter;
-import org.openmrs.activelist.ActiveListItem;
-import org.openmrs.activelist.Allergy;
-import org.openmrs.activelist.Problem;
+import org.openmrs.Allergy;
 import org.openmrs.api.context.Context;
 import org.openmrs.module.shr.cdahandler.CdaHandlerConstants;
 import org.openmrs.module.shr.cdahandler.api.CdaImportService;
@@ -38,70 +37,45 @@ import org.openmrs.module.shr.cdahandler.processor.entry.impl.ActEntryProcessor;
 public class ConcernEntryProcessor extends ActEntryProcessor {
 
 	/**
-	 * Calculate the current status
-	 */
-	public static ActStatus calculateCurrentStatus(ActiveListItem res) {
-		if(res.getStartDate() == null && res.getEndDate() == null)
-			return ActStatus.New;
-		else if(res.getStartDate() != null && res.getEndDate() == null)
-			return ActStatus.Active;
-		else if(res.getVoided() && res.getEndDate() != null)
-			return ActStatus.Aborted;
-		else if(res.getVoided() && res.getEndDate() == null)
-			return ActStatus.Suspended;
-		else if(res.getEndDate() != null)
-			return ActStatus.Completed;
-		else
-			return null;
-    }
-	
-	/**
 	 * Processes common list contents for the specified class
 	 * Auto generated method comment
-	 * 
+	 *
 	 * @param act
-	 * @param res
+	 * @param obs
+	 * @param clazz
 	 * @return
-	 * @throws DocumentImportException 
+	 * @throws DocumentImportException
 	 */
-	public <T extends ActiveListItem> T createActiveListItem(Act act, ClinicalStatement statement, ExtendedObs obs, Class<T> clazz) throws DocumentImportException {
-		
+	public <T extends BaseOpenmrsData> T createItem(Act act, ExtendedObs obs, Class<T> clazz) throws DocumentImportException {
+
 		// Get the encounter context
 		Encounter encounterInfo = (Encounter)super.getEncounterContext().getParsedObject();
-		ActiveListItem previousItem = null;
-		
+		BaseOpenmrsData previousItem = null;
+
 		// IS this a replacement?
 		for(Reference reference : act.getReference())
 			if(reference.getExternalActChoiceIfExternalAct() == null ||
 				!reference.getTypeCode().getCode().equals(x_ActRelationshipExternalReference.RPLC))
 				continue;
-			else if(Allergy.class.isAssignableFrom(clazz)) 
+			else if(Allergy.class.isAssignableFrom(clazz))
 				previousItem = this.m_dataUtil.findExistingAllergy(reference.getExternalActChoiceIfExternalAct().getId(), encounterInfo.getPatient());
-			else if(Problem.class.isAssignableFrom(clazz))
-				previousItem = this.m_dataUtil.findExistingProblem(reference.getExternalActChoiceIfExternalAct().getId(), encounterInfo.getPatient());
-		
+			else if(Condition.class.isAssignableFrom(clazz))
+				previousItem = this.m_dataUtil.findExistingCondition(reference.getExternalActChoiceIfExternalAct().getId(), encounterInfo.getPatient());
+
 		// Validate duplicates? This will work by AN and ID
 		if(act.getId() != null)
 		{
-			ActiveListItem existingItem = null;
-			if(Allergy.class.isAssignableFrom(clazz)) 
+			BaseOpenmrsData existingItem = null;
+			if(Allergy.class.isAssignableFrom(clazz))
 				existingItem = this.m_dataUtil.findExistingAllergy(act.getId(), encounterInfo.getPatient());
-			else if(Problem.class.isAssignableFrom(clazz))
-				existingItem = this.m_dataUtil.findExistingProblem(act.getId(), encounterInfo.getPatient());
-			
+			else if(Condition.class.isAssignableFrom(clazz))
+				existingItem = this.m_dataUtil.findExistingCondition(act.getId(), encounterInfo.getPatient());
+
 			// An replacement from the auto-replace
 			if(existingItem != null && this.m_configuration.getUpdateExisting())
-				previousItem = existingItem; 
+				previousItem = existingItem;
 			else if(existingItem != null)
 				throw new DocumentImportException(String.format("Duplicate list item %s. If you intend to replace it please use the replacement mechanism for CDA", FormatterUtil.toWireFormat(act.getId())));
-		}
-
-		// Try to load by observation?
-		if(previousItem == null && obs.getPreviousVersion() != null)
-		{
-			List<? extends ActiveListItem> candidates = Context.getService(CdaImportService.class).getActiveListItemByObs(obs.getPreviousVersion(), clazz);
-			if(candidates.size() > 0)
-				previousItem = candidates.get(0);
 		}
 
 		// Update the previous item
@@ -116,86 +90,28 @@ public class ConcernEntryProcessor extends ActEntryProcessor {
         catch (Exception e) {
         	throw new DocumentImportException("Could not create necessary class", e);
         }
-		
+
 		// Set created or updated time
 		if(res.getDateCreated() == null)
 			res.setDateCreated(encounterInfo.getDateCreated());
 		else
 			res.setDateChanged(encounterInfo.getDateCreated());
-		
-		// New?
-		ActStatus currentStatus = ConcernEntryProcessor.calculateCurrentStatus(res);
 
-		// Effective time?
-		if(act.getEffectiveTime() != null)
-		{
-			// Can only update start date if currentStatus is New or Active
-			if(act.getEffectiveTime().getLow() != null && !act.getEffectiveTime().getLow().isNull())
-			{
-				// Does this report it to be prior to the currently known start date?
-				if(res.getStartDate() == null || act.getEffectiveTime().getLow().getDateValue().getTime().compareTo(res.getStartDate()) < 0)
-				{
-					// Void and previous version
-					if(res.getStartObs() != null)
-					{
-						Context.getObsService().voidObs(res.getStartObs(), "Replaced");
-						obs.setPreviousVersion(res.getStartObs());
-					}
-					res.setStartObs(obs);
-					res.setStartDate(act.getEffectiveTime().getLow().getDateValue().getTime());
-				}
-			}
-			if(act.getEffectiveTime().getHigh() != null && !act.getEffectiveTime().getHigh().isNull())
-			{
-				// Does this report it to be after the currently known end date?
-				if(res.getEndDate() == null || act.getEffectiveTime().getHigh().getDateValue().getTime().compareTo(res.getEndDate()) > 0)
-				{
-					// Void and previous version
-					if(res.getStopObs() != null)
-					{
-						Context.getObsService().voidObs(res.getStopObs(), "Replaced");
-						obs.setPreviousVersion(res.getStopObs());
-					}
-					res.setStopObs(obs);
-					res.setEndDate(act.getEffectiveTime().getHigh().getDateValue().getTime());
-				}
-			}
-		}
-		else if(act.getStatusCode().getCode() != ActStatus.Completed)
-			throw new DocumentImportException("Missing effective time of the problem");
-
-		// we have to assign a start or else OMRS will assign one for us!
-		if(obs.getObsStartDate() != null && res.getStartDate() == null) 
-		{
-			res.setStartObs(obs);
-			res.setStartDate(obs.getObsStartDate());
-		}
-		if(obs.getObsEndDate() != null && res.getEndDate() == null)
-		{
-			res.setEndDate(obs.getObsEndDate());
-			res.setStopObs(obs);
-		}
-		// We don't know when it started or stopped
-		if(res.getStartDate() == null && res.getEndDate() == null && obs.getObsDatePrecision() == 0)
-			res.setStartObs(obs);
-		
-		// Void this?
-		if(act.getStatusCode().getCode() == ActStatus.Aborted || 
-				act.getStatusCode().getCode() == ActStatus.Suspended)
-		{
-			res.setVoided(true);
-			res.setVoidReason(act.getStatusCode().getCode().getCode());
-			res.setDateVoided(encounterInfo.getDateCreated());
-		}
-		
-		// Copy attributes
-		res.setPerson(encounterInfo.getPatient());
-		
 		// Author
 		super.setCreator(res, act);
 		return res;
+
     }
-	
+
+	/**
+	 * Parse act contents into a list item... This technically can't be done at this
+	 * level because a concern entry doesn't have enough information information about
+	 * the type of concern to know which active list item to create
+	 */
+	protected void parseActContents(Act act, ClinicalStatement obs) throws DocumentImportException {
+
+	}
+
 
 	/**
 	 * Get the expected entries .. there are none other than there should be more than one
@@ -214,16 +130,7 @@ public class ConcernEntryProcessor extends ActEntryProcessor {
 	public String getTemplateName() {
 		return "Concern Entry";
 	}
-	
-	
-	/**
-	 * Parse act contents into a list item... This technically can't be done at this 
-	 * level because a concern entry doesn't have enough information information about
-	 * the type of concern to know which active list item to create  
-	 */
-	protected ActiveListItem parseActContents(Act act, ClinicalStatement obs) throws DocumentImportException {
-		return null;
-    }
+
 
 	/**
 	 * The concern gets placed in two places in the OpenMRS datamodel:
@@ -261,9 +168,7 @@ public class ConcernEntryProcessor extends ActEntryProcessor {
 				continue;
 		
 			// Process the active list item
-			ActiveListItem listItem = this.parseActContents(act, relationship.getClinicalStatement());
-			if(listItem != null)
-				Context.getActiveListService().saveActiveListItem(listItem);
+			this.parseActContents(act, relationship.getClinicalStatement());
 		}
 		
 		return null;

@@ -27,29 +27,20 @@ import org.marc.everest.datatypes.generic.RTO;
 import org.marc.everest.datatypes.generic.SET;
 import org.marc.everest.interfaces.IEnumeratedVocabulary;
 import org.marc.everest.rmim.uv.cdar2.vocabulary.ActPriority;
-import org.openmrs.Concept;
-import org.openmrs.ConceptNumeric;
-import org.openmrs.Drug;
-import org.openmrs.DrugOrder;
-import org.openmrs.Obs;
-import org.openmrs.Order;
+import org.openmrs.*;
 import org.openmrs.Order.Urgency;
-import org.openmrs.Patient;
-import org.openmrs.Provider;
-import org.openmrs.User;
-import org.openmrs.Visit;
-import org.openmrs.VisitAttribute;
-import org.openmrs.VisitAttributeType;
-import org.openmrs.activelist.Allergy;
-import org.openmrs.activelist.Problem;
+import org.openmrs.api.PatientService;
 import org.openmrs.api.context.Context;
 import org.openmrs.customdatatype.InvalidCustomValueException;
+import org.openmrs.module.emrapi.conditionslist.ConditionService;
+import org.openmrs.module.emrapi.conditionslist.impl.ConditionServiceImpl;
 import org.openmrs.module.shr.cdahandler.api.CdaImportService;
 import org.openmrs.module.shr.cdahandler.configuration.CdaHandlerConfiguration;
 import org.openmrs.module.shr.cdahandler.exception.DocumentImportException;
 import org.openmrs.module.shr.cdahandler.obs.ExtendedObs;
 import org.openmrs.obs.ComplexData;
 import org.openmrs.validator.ObsValidator;
+import org.springframework.beans.factory.parsing.Problem;
 
 /**
  * Data utilities for OpenMRS
@@ -292,19 +283,22 @@ public final class OpenmrsDataUtil {
 	{
 		try
 		{
+			PatientService allergyService=Context.getPatientService();
+			Allergies allergies=allergyService.getAllergies(patient);
 			for(II id : ids)
 			{
 				if(this.m_configuration.getAllergyRoot().equals(id.getRoot())) // Then try to get the ID
 				{
-					Allergy candidate = Context.getActiveListService().getActiveListItem(Allergy.class, Integer.parseInt(id.getExtension()));
+					Allergy candidate = allergies.getAllergy(Integer.parseInt(id.getExtension()));
 					if(candidate != null)
 						return candidate;
 				}
 				else
 				{
-					List<Allergy> candidate = Context.getService(CdaImportService.class).getActiveListItemByAccessionNumber(this.m_datatypeUtil.formatIdentifier(id), Allergy.class);
-					if(candidate.size() > 0)
-						return candidate.get(0);
+					for(Allergy a: allergies){
+						if(a.getId().equals(this.m_datatypeUtil.formatIdentifier(id)))
+							return a;
+					}
 				}
 					
 			}
@@ -321,23 +315,27 @@ public final class OpenmrsDataUtil {
 	/**
 	 * Find an existing obs 
 	 */
-	public Problem findExistingProblem(SET<II> ids, Patient patient)
+	public Condition findExistingCondition(SET<II> ids, Patient patient)
 	{
 		try
 		{
 			for(II id : ids)
 			{
+				ConditionService conditionService=Context.getService(ConditionService.class);
+				List<Condition> conditions=conditionService.getActiveConditions(patient);
 				if(this.m_configuration.getProblemRoot().equals(id.getRoot())) // Then try to get the ID
 				{
-					Problem candidate = Context.getActiveListService().getActiveListItem(Problem.class, Integer.parseInt(id.getExtension()));
-					if(candidate != null)
-						return candidate;
+					for(Condition condition:conditions){
+						if(condition.getConditionId().equals(Integer.parseInt(id.getExtension())))
+							return condition;
+					}
 				}
 				else
 				{
-					List<Problem> candidate = Context.getService(CdaImportService.class).getActiveListItemByAccessionNumber(this.m_datatypeUtil.formatIdentifier(id), Problem.class);
-					if(candidate.size() > 0)
-						return candidate.get(0);
+					for(Condition condition:conditions){
+						if(condition.getConditionId().equals(this.m_datatypeUtil.formatIdentifier(id)))
+							return condition;
+					}
 				}
 			}
 			return null;

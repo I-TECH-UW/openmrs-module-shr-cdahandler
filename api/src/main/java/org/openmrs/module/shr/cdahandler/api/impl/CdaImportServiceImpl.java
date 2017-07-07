@@ -26,7 +26,6 @@ import org.marc.everest.interfaces.ResultDetailType;
 import org.marc.everest.resultdetails.DatatypeValidationResultDetail;
 import org.marc.everest.rmim.uv.cdar2.pocd_mt000040uv.ClinicalDocument;
 import org.openmrs.*;
-import org.openmrs.activelist.ActiveListItem;
 import org.openmrs.api.APIException;
 import org.openmrs.api.ConceptService;
 import org.openmrs.api.context.Context;
@@ -228,23 +227,6 @@ public class CdaImportServiceImpl extends BaseOpenmrsService implements CdaImpor
 	@Override
     public ExtendedObs getExtendedObs(Integer id) {
 		return this.dao.getExtendedObs(id);
-    }
-
-	/**
-	 * Get active list item by the accession number of their start/stop obs
-	 */
-	@Override
-    public <T extends ActiveListItem> List<T> getActiveListItemByAccessionNumber(String accessionNumber, Class<T> clazz) {
-	    return this.dao.getActiveListItemByAccessionNumber(accessionNumber, clazz);
-    }
-
-	/**
-	 * Get active list item by obs
-	 * @see org.openmrs.module.shr.cdahandler.api.CdaImportService#getActiveListItemByObs(org.openmrs.Obs, java.lang.Class)
-	 */
-	@Override
-    public <T extends ActiveListItem> List<T> getActiveListItemByObs(Obs obs, Class<T> clazz) {
-		return this.dao.getActiveListItemByObs(obs, clazz);
     }
 
 	/**
