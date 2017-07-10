@@ -11,11 +11,9 @@ import org.marc.everest.rmim.uv.cdar2.pocd_mt000040uv.EntryRelationship;
 import org.marc.everest.rmim.uv.cdar2.pocd_mt000040uv.Reference;
 import org.marc.everest.rmim.uv.cdar2.vocabulary.ActStatus;
 import org.marc.everest.rmim.uv.cdar2.vocabulary.x_ActRelationshipExternalReference;
-import org.openmrs.BaseOpenmrsData;
-import org.openmrs.Condition;
-import org.openmrs.Encounter;
-import org.openmrs.Allergy;
+import org.openmrs.*;
 import org.openmrs.api.context.Context;
+import org.openmrs.module.emrapi.conditionslist.ConditionService;
 import org.openmrs.module.shr.cdahandler.CdaHandlerConstants;
 import org.openmrs.module.shr.cdahandler.api.CdaImportService;
 import org.openmrs.module.shr.cdahandler.exception.DocumentImportException;
@@ -80,12 +78,16 @@ public class ConcernEntryProcessor extends ActEntryProcessor {
 
 		//TODO update, what with obs
 //		// Try to load by observation?
-//		if(previousItem == null && obs.getPreviousVersion() != null)
-//		{
+		if(previousItem == null && obs.getPreviousVersion() != null)
+		{
+			if(Condition.class.isAssignableFrom(clazz))
+				previousItem=getConditionByObs(obs,encounterInfo.getPatient());
+			else if(Allergy.class.isAssignableFrom(clazz))
+				previousItem=getAllergyByObs(obs,encounterInfo.getPatient());
 //			List<? extends ActiveListItem> candidates = Context.getService(CdaImportService.class).getActiveListItemByObs(obs.getPreviousVersion(), clazz);
 //			if(candidates.size() > 0)
 //				previousItem = candidates.get(0);
-//		}
+		}
 
 		// Update the previous item
 		T res = (T)previousItem;
@@ -126,6 +128,22 @@ public class ConcernEntryProcessor extends ActEntryProcessor {
 		return res;
 
     }
+
+    private BaseOpenmrsData getConditionByObs(Obs obs, Patient patient){
+		for(Condition condition : Context.getService(ConditionService.class).getActiveConditions(patient)){
+			if(obs.getValueCoded().equals(condition.getConcept()))
+				return condition;
+		}
+		return null;
+	}
+
+	private BaseOpenmrsData getAllergyByObs(Obs obs,Patient patient){
+    	for(Allergy allergy : Context.getPatientService().getAllergies(patient)){
+    		if(obs.getValueCoded().equals(allergy.getAllergen().getCodedAllergen()))
+    			return allergy;
+		}
+		return null;
+	}
 
 	/**
 	 * Parse act contents into a list item... This technically can't be done at this

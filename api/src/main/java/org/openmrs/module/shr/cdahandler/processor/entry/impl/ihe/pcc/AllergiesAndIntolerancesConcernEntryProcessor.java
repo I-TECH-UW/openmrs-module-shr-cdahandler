@@ -142,15 +142,6 @@ public class AllergiesAndIntolerancesConcernEntryProcessor extends ConcernEntryP
 		Context.getPatientService().saveAllergy(res);
     }
 
-    private boolean allergyExist(Allergy allergy){
-		Allergies allergies=Context.getPatientService().getAllergies(allergy.getPatient());
-		for(Allergy a:allergies){
-			if(a.getAllergen().getCodedAllergen().equals(allergy.getAllergen().getCodedAllergen()))
-				return true;
-		}
-		return false;
-	}
-
 	private Concept getConceptByGlobalProperty(String globalPropertyName) {
 		String globalProperty = Context.getAdministrationService().getGlobalProperty(globalPropertyName);
 		Concept concept = Context.getConceptService().getConceptByUuid(globalProperty);
