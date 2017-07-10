@@ -33,7 +33,7 @@
 		
 				
 		<!-- End OpenMRS modules -->
-		
+
 
 		<!-- Begin OpenMRS core -->
 
@@ -76,6 +76,11 @@
 			<version>${contenthandlerVersion}</version>
 			<type>jar</type>
 			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.openmrs.web</groupId>
+			<artifactId>openmrs-web</artifactId>
+			<version>1.10.2</version>
 		</dependency>
 		<!-- End OpenMRS core -->
 

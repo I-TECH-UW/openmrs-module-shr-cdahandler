@@ -72,14 +72,6 @@
 		<!-- emrapi-condition-list Module -->
 		<dependency>
 			<groupId>org.openmrs.module</groupId>
-			<artifactId>emrapi-api-1.12</artifactId>
-			<version>${emrapiVersion}</version>
-			<type>jar</type>
-			<scope>provided</scope>
-		</dependency>
-
-		<dependency>
-			<groupId>org.openmrs.module</groupId>
 			<artifactId>emrapi-condition-list</artifactId>
 			<version>${emrapiConditionListVersion}</version>
 			<type>jar</type>

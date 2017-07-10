@@ -36,7 +36,6 @@
 		<openMRSVersion>2.0.5</openMRSVersion>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <contenthandlerVersion>3.0.1-SNAPSHOT</contenthandlerVersion>
-		<emrapiVersion>1.22.1</emrapiVersion>
 		<emrapiConditionListVersion>1.22.1</emrapiConditionListVersion>
 	</properties>
 

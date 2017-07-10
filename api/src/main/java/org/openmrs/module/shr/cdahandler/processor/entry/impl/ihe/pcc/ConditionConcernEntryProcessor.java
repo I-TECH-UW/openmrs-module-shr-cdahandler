@@ -8,9 +8,9 @@ import org.marc.everest.rmim.uv.cdar2.pocd_mt000040uv.Act;
 import org.marc.everest.rmim.uv.cdar2.pocd_mt000040uv.ClinicalStatement;
 import org.marc.everest.rmim.uv.cdar2.vocabulary.ActStatus;
 import org.openmrs.BaseOpenmrsData;
-import org.openmrs.activelist.ActiveListItem;
-import org.openmrs.activelist.Problem;
-import org.openmrs.activelist.ProblemModifier;
+import org.openmrs.Condition;
+import org.openmrs.api.context.Context;
+import org.openmrs.module.emrapi.conditionslist.ConditionService;
 import org.openmrs.module.shr.cdahandler.CdaHandlerConstants;
 import org.openmrs.module.shr.cdahandler.exception.DocumentImportException;
 import org.openmrs.module.shr.cdahandler.obs.ExtendedObs;
@@ -27,7 +27,7 @@ import org.openmrs.module.shr.cdahandler.processor.factory.impl.EntryProcessorFa
 	templateIds = {
 			CdaHandlerConstants.ENT_TEMPLATE_PROBLEM_CONCERN
 	})
-public class ProblemConcernEntryProcessor extends ConcernEntryProcessor {
+public class ConditionConcernEntryProcessor extends ConcernEntryProcessor {
 
 	/**
 	 * Get expected entries which in this case are Problem Entries
@@ -53,7 +53,7 @@ public class ProblemConcernEntryProcessor extends ConcernEntryProcessor {
 	 * @see org.openmrs.module.shr.cdahandler.processor.entry.impl.ihe.pcc.ConcernEntryProcessor#parseActContents(org.marc.everest.rmim.uv.cdar2.pocd_mt000040uv.Act, org.openmrs.Obs)
 	 */
 	@Override
-    protected ActiveListItem parseActContents(Act act, ClinicalStatement statement) throws DocumentImportException {
+    protected void parseActContents(Act act, ClinicalStatement statement) throws DocumentImportException {
 		EntryProcessor processor = EntryProcessorFactory.getInstance().createProcessor(statement);
 		processor.setContext(this.getContext());
 
@@ -63,29 +63,91 @@ public class ProblemConcernEntryProcessor extends ConcernEntryProcessor {
 		// Not a problem observation so don't create a problem
 		
 		if(!statement.getTemplateId().contains(new II(CdaHandlerConstants.ENT_TEMPLATE_PROBLEM_OBSERVATION)))
-			return null;
+			return;
 		
 		ExtendedObs obs = (ExtendedObs)processed;
 		
 		// Correct the act based on the effective time of the entry relationship?
-		Problem res = super.createActiveListItem(act, statement, obs, Problem.class);
+		Condition res = super.createItem(act, obs, Condition.class);
+		this.updateItem(res,act,obs);
 			
-		// Problem
+		// Concept
 		if(obs.getValueCoded() == null)
 			throw new DocumentImportException("Observation for this problem must be of type Coded");
-		else if(res.getProblem() == null)
-			res.setProblem(obs.getValueCoded());
+		else if(res.getConcept() == null)
+			res.setConcept(obs.getValueCoded());
 		
 		
-		// Modifier
+		// Status
+		//TODO update, we do not have RULE_OUT status, but we have new status INACTIVE
 		if(act.getNegationInd() != null && act.getNegationInd().toBoolean())
-			res.setModifier(ProblemModifier.RULE_OUT);
+			res.setStatus(Condition.Status.INACTIVE);
 		else if(act.getStatusCode().getCode().equals(ActStatus.Completed))
-			res.setModifier(ProblemModifier.HISTORY_OF);
-		
-		return res;
-		
+			res.setStatus(Condition.Status.HISTORY_OF);
+
+		//save condition
+		Context.getService(ConditionService.class).save(res);
     }
-	
-	
+
+	/**
+	 * Parse the contents of the Act to a Problem
+	 * @throws DocumentImportException
+	 */
+	protected void updateItem(Condition res,Act act, ExtendedObs obs) throws DocumentImportException {
+		// Effective time?
+		if(act.getEffectiveTime() != null)
+		{
+			// Can only update start date if currentStatus is New or Active
+			if(act.getEffectiveTime().getLow() != null && !act.getEffectiveTime().getLow().isNull())
+			{
+				// Does this report it to be prior to the currently known start date?
+				if(res.getOnsetDate() == null || act.getEffectiveTime().getLow().getDateValue().getTime().compareTo(res.getOnsetDate()) < 0)
+				{
+					//TODO update, how to get obs
+					// Void and previous version
+//					if(res.getStartObs() != null)
+//					{
+//						Context.getObsService().voidObs(res.getStartObs(), "Replaced");
+//						obs.setPreviousVersion(res.getStartObs());
+//					}
+//					res.setStartObs(obs);
+					res.setOnsetDate(act.getEffectiveTime().getLow().getDateValue().getTime());
+				}
+			}
+			if(act.getEffectiveTime().getHigh() != null && !act.getEffectiveTime().getHigh().isNull())
+			{
+				// Does this report it to be after the currently known end date?
+				if(res.getEndDate() == null || act.getEffectiveTime().getHigh().getDateValue().getTime().compareTo(res.getEndDate()) > 0)
+				{
+					//TODO update, how to get obs
+					// Void and previous version
+//					if(res.getStopObs() != null)
+//					{
+//						Context.getObsService().voidObs(res.getStopObs(), "Replaced");
+//						obs.setPreviousVersion(res.getStopObs());
+//					}
+//					res.setStopObs(obs);
+					res.setEndDate(act.getEffectiveTime().getHigh().getDateValue().getTime());
+				}
+			}
+		}
+		else if(act.getStatusCode().getCode() != ActStatus.Completed)
+			throw new DocumentImportException("Missing effective time of the problem");
+
+		//TODO update, how to get obs
+		// we have to assign a start or else OMRS will assign one for us!
+//		if(obs.getObsStartDate() != null && res.getStartDate() == null)
+//		{
+//			res.setStartObs(obs);
+//			res.setStartDate(obs.getObsStartDate());
+//		}
+//		if(obs.getObsEndDate() != null && res.getEndDate() == null)
+//		{
+//			res.setEndDate(obs.getObsEndDate());
+//			res.setStopObs(obs);
+//		}
+//		// We don't know when it started or stopped
+//		if(res.getStartDate() == null && res.getEndDate() == null && obs.getObsDatePrecision() == 0)
+//			res.setStartObs(obs);
+	}
 }

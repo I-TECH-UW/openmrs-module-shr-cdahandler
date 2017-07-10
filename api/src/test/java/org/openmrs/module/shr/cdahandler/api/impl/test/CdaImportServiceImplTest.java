@@ -22,8 +22,8 @@ import org.openmrs.GlobalProperty;
 import org.openmrs.Obs;
 import org.openmrs.Patient;
 import org.openmrs.Visit;
-import org.openmrs.activelist.Problem;
 import org.openmrs.api.context.Context;
+import org.openmrs.module.emrapi.conditionslist.ConditionService;
 import org.openmrs.module.shr.cdahandler.CdaHandlerConstants;
 import org.openmrs.module.shr.cdahandler.api.CdaImportService;
 import org.openmrs.module.shr.cdahandler.configuration.CdaHandlerConfiguration;
@@ -148,7 +148,7 @@ public class CdaImportServiceImplTest extends BaseModuleContextSensitiveTest  {
 		String id = this.doParseCda("/validCdaLevel3Sample.xml");
 		id = this.doParseCda("/validCdaLevel3Sample.xml");
 		int nvc = 0;
-		
+
 		Patient patient = Context.getPatientService().getPatients("FirstName").get(0);
 		// Assert : Immunizations SHALL be replaced (there are 4 in each CDA therefore there should be 4 and not 8)
 		for(Obs ob : Context.getObsService().getObservationsByPersonAndConcept(patient, Context.getConceptService().getConcept(CdaHandlerConstants.CONCEPT_ID_IMMUNIZATION_HISTORY)))
@@ -169,7 +169,7 @@ public class CdaImportServiceImplTest extends BaseModuleContextSensitiveTest  {
 
 
 		// Should have 5 problems not 10
-		assertEquals(5, Context.getActiveListService().getActiveListItems(patient, Problem.ACTIVE_LIST_TYPE).size());
+		assertEquals(5, Context.getService(ConditionService.class).getActiveConditions(patient).size());
 		
 	
 	}

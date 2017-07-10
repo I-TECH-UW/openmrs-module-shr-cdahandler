@@ -78,6 +78,15 @@ public class ConcernEntryProcessor extends ActEntryProcessor {
 				throw new DocumentImportException(String.format("Duplicate list item %s. If you intend to replace it please use the replacement mechanism for CDA", FormatterUtil.toWireFormat(act.getId())));
 		}
 
+		//TODO update, what with obs
+//		// Try to load by observation?
+//		if(previousItem == null && obs.getPreviousVersion() != null)
+//		{
+//			List<? extends ActiveListItem> candidates = Context.getService(CdaImportService.class).getActiveListItemByObs(obs.getPreviousVersion(), clazz);
+//			if(candidates.size() > 0)
+//				previousItem = candidates.get(0);
+//		}
+
 		// Update the previous item
 		T res = (T)previousItem;
 
@@ -96,6 +105,21 @@ public class ConcernEntryProcessor extends ActEntryProcessor {
 			res.setDateCreated(encounterInfo.getDateCreated());
 		else
 			res.setDateChanged(encounterInfo.getDateCreated());
+
+		// Void this?
+		if(act.getStatusCode().getCode() == ActStatus.Aborted ||
+				act.getStatusCode().getCode() == ActStatus.Suspended)
+		{
+			res.setVoided(true);
+			res.setVoidReason(act.getStatusCode().getCode().getCode());
+			res.setDateVoided(encounterInfo.getDateCreated());
+		}
+
+		// Copy attributes
+		if(Allergy.class.isAssignableFrom(clazz))
+			((Allergy)res).setPatient(encounterInfo.getPatient());
+		else if(Condition.class.isAssignableFrom(clazz))
+			((Condition)res).setPatient(encounterInfo.getPatient());
 
 		// Author
 		super.setCreator(res, act);

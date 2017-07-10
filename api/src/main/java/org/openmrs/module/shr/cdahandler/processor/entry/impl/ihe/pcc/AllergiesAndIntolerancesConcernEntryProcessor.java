@@ -10,10 +10,7 @@ import org.marc.everest.rmim.uv.cdar2.pocd_mt000040uv.Act;
 import org.marc.everest.rmim.uv.cdar2.pocd_mt000040uv.ClinicalStatement;
 import org.marc.everest.rmim.uv.cdar2.pocd_mt000040uv.EntryRelationship;
 import org.marc.everest.rmim.uv.cdar2.pocd_mt000040uv.Observation;
-import org.marc.everest.rmim.uv.cdar2.vocabulary.ActStatus;
-import org.openmrs.BaseOpenmrsData;
-import org.openmrs.Concept;
-import org.openmrs.Allergy;
+import org.openmrs.*;
 import org.openmrs.api.context.Context;
 import org.openmrs.module.shr.cdahandler.CdaHandlerConstants;
 import org.openmrs.module.shr.cdahandler.api.CdaImportService;
@@ -74,34 +71,38 @@ public class AllergiesAndIntolerancesConcernEntryProcessor extends ConcernEntryP
 		// We don't track the allergy to an obs if we can help it..
 		Allergy res = super.createItem(act, obs, Allergy.class);
 		this.updateItem(res,act,obs);
-		res.setActiveListType(Allergy.ACTIVE_LIST_TYPE);
-		
-		// Populate allergy contents ... What is the allergy type?
-		if(observation.getCode().getCode().equals("FALG") ||
-				observation.getCode().getCode().equals("FINT") ||
-				observation.getCode().getCode().equals("FNAINT"))
-			res.setAllergyType(AllergyType.FOOD);
-		else if(observation.getCode().getCode().equals("DALG") ||
-				observation.getCode().getCode().equals("DINT") ||
-				observation.getCode().getCode().equals("DNAINT"))
-			res.setAllergyType(AllergyType.DRUG);
-		else if(observation.getCode().getCode().equals("EALG") ||
-				observation.getCode().getCode().equals("EINT") ||
-				observation.getCode().getCode().equals("ENAINT"))
-			res.setAllergyType(AllergyType.ENVIRONMENT);
-		else 
-			res.setAllergyType(AllergyType.OTHER);
-		
+		if(res.getAllergen()==null) res.setAllergen(new Allergen());
+
 		// Now we have to dive into the allergen a little bit
 		if(observation.getParticipant().size() == 1 &&
 				observation.getParticipant().get(0).getParticipantRole() != null &&
 				observation.getParticipant().get(0).getParticipantRole().getPlayingEntityChoiceIfPlayingEntity() != null &&
-				observation.getParticipant().get(0).getParticipantRole().getPlayingEntityChoiceIfPlayingEntity().getCode() != null)
-			res.setAllergen(this.m_conceptUtil.getOrCreateConcept(observation.getParticipant().get(0).getParticipantRole().getPlayingEntityChoiceIfPlayingEntity().getCode()));
-		else if(obs.getValueCoded() != null)
-			res.setAllergen(obs.getValueCoded());
+				observation.getParticipant().get(0).getParticipantRole().getPlayingEntityChoiceIfPlayingEntity().getCode() != null){
+			Concept concept=this.m_conceptUtil.getOrCreateConcept(observation.getParticipant().get(0).getParticipantRole().getPlayingEntityChoiceIfPlayingEntity().getCode());
+			res.getAllergen().setCodedAllergen(concept);
+		}
+		else if(obs.getValueCoded() != null){
+			Concept concept=obs.getValueCoded();
+			res.getAllergen().setCodedAllergen(concept);
+		}
 		else
 			throw new DocumentImportException("Allergen must be of type CD");
+
+		// Populate allergy contents ... What is the allergy type?
+		if(observation.getCode().getCode().equals("FALG") ||
+				observation.getCode().getCode().equals("FINT") ||
+				observation.getCode().getCode().equals("FNAINT"))
+			res.setAllergenType(AllergenType.FOOD);
+		else if(observation.getCode().getCode().equals("DALG") ||
+				observation.getCode().getCode().equals("DINT") ||
+				observation.getCode().getCode().equals("DNAINT"))
+			res.setAllergenType(AllergenType.DRUG);
+		else if(observation.getCode().getCode().equals("EALG") ||
+				observation.getCode().getCode().equals("EINT") ||
+				observation.getCode().getCode().equals("ENAINT"))
+			res.setAllergenType(AllergenType.ENVIRONMENT);
+		else
+			res.setAllergenType(AllergenType.OTHER);
 				
 		// Set severity (if possible)
 		List<EntryRelationship> severityRelationship = this.findEntryRelationship(observation, CdaHandlerConstants.ENT_TEMPLATE_SEVERITY_OBSERVATION);
@@ -111,16 +112,17 @@ public class AllergiesAndIntolerancesConcernEntryProcessor extends ConcernEntryP
 			Observation severityObservation = severityRelationship.get(0).getClinicalStatementIfObservation();
 			CS<String> severityObservationValue = (CS<String>)severityObservation.getValue();
 			if(severityObservationValue.getCode().equals("L"))
-				res.setSeverity(AllergySeverity.MILD);
+				res.setSeverity(getConceptByGlobalProperty("allergy.concept.severity.mild"));
 			if(severityObservationValue.getCode().equals("M"))
-				res.setSeverity(AllergySeverity.MODERATE);			
+				res.setSeverity(getConceptByGlobalProperty("allergy.concept.severity.moderate"));
 			if(severityObservationValue.getCode().equals("H"))
-					res.setSeverity(AllergySeverity.SEVERE);
+					res.setSeverity(getConceptByGlobalProperty("allergy.concept.severity.severe"));
 		}
-		else if(observation.getCode().getCode().endsWith("INT"))
-			res.setSeverity(AllergySeverity.INTOLERANCE);
-		else
-			res.setSeverity(AllergySeverity.UNKNOWN);
+		//TODO update, how to find this concepts
+//		else if(observation.getCode().getCode().endsWith("INT"))
+//			res.setSeverity(AllergySeverity.INTOLERANCE);
+//		else
+//			res.setSeverity(AllergySeverity.UNKNOWN);
 		
 		// Are there manifestations (reactions)?
 		List<EntryRelationship> manifestationRelationship = this.findEntryRelationship(observation, CdaHandlerConstants.ENT_TEMPLATE_MANIFESTATION_RELATION);
@@ -128,87 +130,96 @@ public class AllergiesAndIntolerancesConcernEntryProcessor extends ConcernEntryP
 		{
 			Observation manifestationObservation = manifestationRelationship.get(0).getClinicalStatementIfObservation();
 			// Get the concept
-			Concept reaction = this.m_conceptUtil.getOrCreateConcept((CV)manifestationObservation.getValue());
-			res.setReaction(reaction);
+			Concept reactionConcept = this.m_conceptUtil.getOrCreateConcept((CV)manifestationObservation.getValue());
+			if(reactionConcept!=null)
+				res.addReaction(new AllergyReaction(res,reactionConcept,null));
+
 		}
 		else if(manifestationRelationship.size() > 1)
 			throw new DocumentImportException("Allergy importer only supports one manifestation relationship");
-		
-		
-		return res;
-		if(listItem != null)
-			Context.getActiveListService().saveActiveListItem(listItem);
+
+		//save allergy
+		Context.getPatientService().saveAllergy(res);
     }
 
+    private boolean allergyExist(Allergy allergy){
+		Allergies allergies=Context.getPatientService().getAllergies(allergy.getPatient());
+		for(Allergy a:allergies){
+			if(a.getAllergen().getCodedAllergen().equals(allergy.getAllergen().getCodedAllergen()))
+				return true;
+		}
+		return false;
+	}
+
+	private Concept getConceptByGlobalProperty(String globalPropertyName) {
+		String globalProperty = Context.getAdministrationService().getGlobalProperty(globalPropertyName);
+		Concept concept = Context.getConceptService().getConceptByUuid(globalProperty);
+		if (concept == null) {
+			throw new IllegalStateException("Configuration required: " + globalPropertyName);
+		}
+		return concept;
+	}
+
 	/**
-	 * Parse the contents of the Act to a Problem
+	 * Parse the contents of the Act to a Allergy
 	 * @throws DocumentImportException
 	 */
 	protected void updateItem(Allergy res, Act act, ExtendedObs obs){
+		//TODO update, what with this dates
 		// Effective time?
-		if(act.getEffectiveTime() != null)
-		{
-			// Can only update start date if currentStatus is New or Active
-			if(act.getEffectiveTime().getLow() != null && !act.getEffectiveTime().getLow().isNull())
-			{
-				// Does this report it to be prior to the currently known start date?
-				if(res.getStartDate() == null || act.getEffectiveTime().getLow().getDateValue().getTime().compareTo(res.getStartDate()) < 0)
-				{
-					// Void and previous version
-					if(res.getStartObs() != null)
-					{
-						Context.getObsService().voidObs(res.getStartObs(), "Replaced");
-						obs.setPreviousVersion(res.getStartObs());
-					}
-					res.setStartObs(obs);
-					res.setStartDate(act.getEffectiveTime().getLow().getDateValue().getTime());
-				}
-			}
-			if(act.getEffectiveTime().getHigh() != null && !act.getEffectiveTime().getHigh().isNull())
-			{
-				// Does this report it to be after the currently known end date?
-				if(res.getEndDate() == null || act.getEffectiveTime().getHigh().getDateValue().getTime().compareTo(res.getEndDate()) > 0)
-				{
-					// Void and previous version
-					if(res.getStopObs() != null)
-					{
-						Context.getObsService().voidObs(res.getStopObs(), "Replaced");
-						obs.setPreviousVersion(res.getStopObs());
-					}
-					res.setStopObs(obs);
-					res.setEndDate(act.getEffectiveTime().getHigh().getDateValue().getTime());
-				}
-			}
-		}
-		else if(act.getStatusCode().getCode() != ActStatus.Completed)
-			throw new DocumentImportException("Missing effective time of the problem");
+//		if(act.getEffectiveTime() != null)
+//		{
+//			// Can only update start date if currentStatus is New or Active
+//			if(act.getEffectiveTime().getLow() != null && !act.getEffectiveTime().getLow().isNull())
+//			{
+//				// Does this report it to be prior to the currently known start date?
+//				if(res.getStartDate() == null || act.getEffectiveTime().getLow().getDateValue().getTime().compareTo(res.getStartDate()) < 0)
+//				{
+//					// Void and previous version
+//					if(res.getStartObs() != null)
+//					{
+//						Context.getObsService().voidObs(res.getStartObs(), "Replaced");
+//						obs.setPreviousVersion(res.getStartObs());
+//					}
+//					res.setStartObs(obs);
+//					res.setStartDate(act.getEffectiveTime().getLow().getDateValue().getTime());
+//				}
+//			}
+//			if(act.getEffectiveTime().getHigh() != null && !act.getEffectiveTime().getHigh().isNull())
+//			{
+//				// Does this report it to be after the currently known end date?
+//				if(res.getEndDate() == null || act.getEffectiveTime().getHigh().getDateValue().getTime().compareTo(res.getEndDate()) > 0)
+//				{
+//					// Void and previous version
+//					if(res.getStopObs() != null)
+//					{
+//						Context.getObsService().voidObs(res.getStopObs(), "Replaced");
+//						obs.setPreviousVersion(res.getStopObs());
+//					}
+//					res.setStopObs(obs);
+//					res.setEndDate(act.getEffectiveTime().getHigh().getDateValue().getTime());
+//				}
+//			}
+//		}
+//		else if(act.getStatusCode().getCode() != ActStatus.Completed)
+//			throw new DocumentImportException("Missing effective time of the problem");
 
+		//TODO update, what with obs
 		// we have to assign a start or else OMRS will assign one for us!
-		if(obs.getObsStartDate() != null && res.getStartDate() == null)
-		{
-			res.setStartObs(obs);
-			res.setStartDate(obs.getObsStartDate());
-		}
-		if(obs.getObsEndDate() != null && res.getEndDate() == null)
-		{
-			res.setEndDate(obs.getObsEndDate());
-			res.setStopObs(obs);
-		}
-		// We don't know when it started or stopped
-		if(res.getStartDate() == null && res.getEndDate() == null && obs.getObsDatePrecision() == 0)
-			res.setStartObs(obs);
+//		if(obs.getObsStartDate() != null && res.getStartDate() == null)
+//		{
+//			res.setStartObs(obs);
+//			res.setStartDate(obs.getObsStartDate());
+//		}
+//		if(obs.getObsEndDate() != null && res.getEndDate() == null)
+//		{
+//			res.setEndDate(obs.getObsEndDate());
+//			res.setStopObs(obs);
+//		}
+//		// We don't know when it started or stopped
+//		if(res.getStartDate() == null && res.getEndDate() == null && obs.getObsDatePrecision() == 0)
+//			res.setStartObs(obs);
 
-		// Void this?
-		if(act.getStatusCode().getCode() == ActStatus.Aborted ||
-				act.getStatusCode().getCode() == ActStatus.Suspended)
-		{
-			res.setVoided(true);
-			res.setVoidReason(act.getStatusCode().getCode().getCode());
-			res.setDateVoided(encounterInfo.getDateCreated());
-		}
-
-		// Copy attributes
-		res.setPerson(encounterInfo.getPatient());
 	}
 	
 }
