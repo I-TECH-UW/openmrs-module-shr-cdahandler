@@ -70,7 +70,6 @@ public class AllergiesAndIntolerancesConcernEntryProcessor extends ConcernEntryP
 		
 		// We don't track the allergy to an obs if we can help it..
 		Allergy res = super.createItem(act, obs, Allergy.class);
-		this.updateItem(res,act,obs);
 		if(res.getAllergen()==null) res.setAllergen(new Allergen());
 
 		// Now we have to dive into the allergen a little bit
@@ -117,12 +116,9 @@ public class AllergiesAndIntolerancesConcernEntryProcessor extends ConcernEntryP
 				res.setSeverity(getConceptByGlobalProperty("allergy.concept.severity.moderate"));
 			if(severityObservationValue.getCode().equals("H"))
 					res.setSeverity(getConceptByGlobalProperty("allergy.concept.severity.severe"));
+			else
+				res.setSeverity(getConceptByGlobalProperty("allergy.concept.unknown"));
 		}
-		//TODO update, how to find this concepts
-//		else if(observation.getCode().getCode().endsWith("INT"))
-//			res.setSeverity(AllergySeverity.INTOLERANCE);
-//		else
-//			res.setSeverity(AllergySeverity.UNKNOWN);
 		
 		// Are there manifestations (reactions)?
 		List<EntryRelationship> manifestationRelationship = this.findEntryRelationship(observation, CdaHandlerConstants.ENT_TEMPLATE_MANIFESTATION_RELATION);
@@ -149,68 +145,6 @@ public class AllergiesAndIntolerancesConcernEntryProcessor extends ConcernEntryP
 			throw new IllegalStateException("Configuration required: " + globalPropertyName);
 		}
 		return concept;
-	}
-
-	/**
-	 * Parse the contents of the Act to a Allergy
-	 * @throws DocumentImportException
-	 */
-	protected void updateItem(Allergy res, Act act, ExtendedObs obs){
-		//TODO update, what with this dates
-		// Effective time?
-//		if(act.getEffectiveTime() != null)
-//		{
-//			// Can only update start date if currentStatus is New or Active
-//			if(act.getEffectiveTime().getLow() != null && !act.getEffectiveTime().getLow().isNull())
-//			{
-//				// Does this report it to be prior to the currently known start date?
-//				if(res.getStartDate() == null || act.getEffectiveTime().getLow().getDateValue().getTime().compareTo(res.getStartDate()) < 0)
-//				{
-//					// Void and previous version
-//					if(res.getStartObs() != null)
-//					{
-//						Context.getObsService().voidObs(res.getStartObs(), "Replaced");
-//						obs.setPreviousVersion(res.getStartObs());
-//					}
-//					res.setStartObs(obs);
-//					res.setStartDate(act.getEffectiveTime().getLow().getDateValue().getTime());
-//				}
-//			}
-//			if(act.getEffectiveTime().getHigh() != null && !act.getEffectiveTime().getHigh().isNull())
-//			{
-//				// Does this report it to be after the currently known end date?
-//				if(res.getEndDate() == null || act.getEffectiveTime().getHigh().getDateValue().getTime().compareTo(res.getEndDate()) > 0)
-//				{
-//					// Void and previous version
-//					if(res.getStopObs() != null)
-//					{
-//						Context.getObsService().voidObs(res.getStopObs(), "Replaced");
-//						obs.setPreviousVersion(res.getStopObs());
-//					}
-//					res.setStopObs(obs);
-//					res.setEndDate(act.getEffectiveTime().getHigh().getDateValue().getTime());
-//				}
-//			}
-//		}
-//		else if(act.getStatusCode().getCode() != ActStatus.Completed)
-//			throw new DocumentImportException("Missing effective time of the problem");
-
-		//TODO update, what with obs
-		// we have to assign a start or else OMRS will assign one for us!
-//		if(obs.getObsStartDate() != null && res.getStartDate() == null)
-//		{
-//			res.setStartObs(obs);
-//			res.setStartDate(obs.getObsStartDate());
-//		}
-//		if(obs.getObsEndDate() != null && res.getEndDate() == null)
-//		{
-//			res.setEndDate(obs.getObsEndDate());
-//			res.setStopObs(obs);
-//		}
-//		// We don't know when it started or stopped
-//		if(res.getStartDate() == null && res.getEndDate() == null && obs.getObsDatePrecision() == 0)
-//			res.setStartObs(obs);
-
 	}
 	
 }

@@ -79,7 +79,6 @@ public class ConditionConcernEntryProcessor extends ConcernEntryProcessor {
 		
 		
 		// Status
-		//TODO update, we do not have RULE_OUT status, but we have new status INACTIVE
 		if(act.getNegationInd() != null && act.getNegationInd().toBoolean())
 			res.setStatus(Condition.Status.INACTIVE);
 		else if(act.getStatusCode().getCode().equals(ActStatus.Completed))
@@ -103,14 +102,6 @@ public class ConditionConcernEntryProcessor extends ConcernEntryProcessor {
 				// Does this report it to be prior to the currently known start date?
 				if(res.getOnsetDate() == null || act.getEffectiveTime().getLow().getDateValue().getTime().compareTo(res.getOnsetDate()) < 0)
 				{
-					//TODO update, how to get obs
-					// Void and previous version
-//					if(res.getStartObs() != null)
-//					{
-//						Context.getObsService().voidObs(res.getStartObs(), "Replaced");
-//						obs.setPreviousVersion(res.getStartObs());
-//					}
-//					res.setStartObs(obs);
 					res.setOnsetDate(act.getEffectiveTime().getLow().getDateValue().getTime());
 				}
 			}
@@ -119,35 +110,11 @@ public class ConditionConcernEntryProcessor extends ConcernEntryProcessor {
 				// Does this report it to be after the currently known end date?
 				if(res.getEndDate() == null || act.getEffectiveTime().getHigh().getDateValue().getTime().compareTo(res.getEndDate()) > 0)
 				{
-					//TODO update, how to get obs
-					// Void and previous version
-//					if(res.getStopObs() != null)
-//					{
-//						Context.getObsService().voidObs(res.getStopObs(), "Replaced");
-//						obs.setPreviousVersion(res.getStopObs());
-//					}
-//					res.setStopObs(obs);
 					res.setEndDate(act.getEffectiveTime().getHigh().getDateValue().getTime());
 				}
 			}
 		}
 		else if(act.getStatusCode().getCode() != ActStatus.Completed)
 			throw new DocumentImportException("Missing effective time of the problem");
-
-		//TODO update, how to get obs
-		// we have to assign a start or else OMRS will assign one for us!
-//		if(obs.getObsStartDate() != null && res.getStartDate() == null)
-//		{
-//			res.setStartObs(obs);
-//			res.setStartDate(obs.getObsStartDate());
-//		}
-//		if(obs.getObsEndDate() != null && res.getEndDate() == null)
-//		{
-//			res.setEndDate(obs.getObsEndDate());
-//			res.setStopObs(obs);
-//		}
-//		// We don't know when it started or stopped
-//		if(res.getStartDate() == null && res.getEndDate() == null && obs.getObsDatePrecision() == 0)
-//			res.setStartObs(obs);
 	}
 }

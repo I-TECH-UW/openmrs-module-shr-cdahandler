@@ -76,7 +76,7 @@ public class ConcernEntryProcessor extends ActEntryProcessor {
 				throw new DocumentImportException(String.format("Duplicate list item %s. If you intend to replace it please use the replacement mechanism for CDA", FormatterUtil.toWireFormat(act.getId())));
 		}
 
-		//TODO update, what with obs
+
 //		// Try to load by observation?
 		if(previousItem == null && obs.getPreviousVersion() != null)
 		{
@@ -84,9 +84,6 @@ public class ConcernEntryProcessor extends ActEntryProcessor {
 				previousItem=getConditionByObs(obs,encounterInfo.getPatient());
 			else if(Allergy.class.isAssignableFrom(clazz))
 				previousItem=getAllergyByObs(obs,encounterInfo.getPatient());
-//			List<? extends ActiveListItem> candidates = Context.getService(CdaImportService.class).getActiveListItemByObs(obs.getPreviousVersion(), clazz);
-//			if(candidates.size() > 0)
-//				previousItem = candidates.get(0);
 		}
 
 		// Update the previous item

@@ -293,14 +293,6 @@ public final class OpenmrsDataUtil {
 					if(candidate != null)
 						return candidate;
 				}
-				else
-				{
-					for(Allergy a: allergies){
-						if(a.getId().equals(this.m_datatypeUtil.formatIdentifier(id)))
-							return a;
-					}
-				}
-					
 			}
 			return null;
 		}
@@ -327,13 +319,6 @@ public final class OpenmrsDataUtil {
 				{
 					for(Condition condition:conditions){
 						if(condition.getConditionId().equals(Integer.parseInt(id.getExtension())))
-							return condition;
-					}
-				}
-				else
-				{
-					for(Condition condition:conditions){
-						if(condition.getConditionId().equals(this.m_datatypeUtil.formatIdentifier(id)))
 							return condition;
 					}
 				}
