@@ -64,6 +64,7 @@ public class CdaImportServiceImplTest extends BaseModuleContextSensitiveTest  {
 		executeDataSet(ACTIVE_LIST_INITIAL_XML);
 		executeDataSet(CIEL_LIST_INITIAL_XML);
 		// TODO: Set properties
+
 	}
 	
 	/**
@@ -131,19 +132,6 @@ public class CdaImportServiceImplTest extends BaseModuleContextSensitiveTest  {
 
 	@Test
 	public void shouldParseValidAphpFullTest() throws DocumentImportException {
-		Concept concept = new Concept();
-		concept.setUuid("1500AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
-		ConceptName name = new ConceptName();
-		name.setName("severity SEVERE");
-		HashSet<ConceptName> names = new HashSet<>();
-		names.add(name);
-		name.setLocale(Locale.ENGLISH);
-		concept.setNames(names);
-		concept.setPreferredName(name);
-		concept.setFullySpecifiedName(name);
-		concept.setDatatype(Context.getConceptService().getConceptDatatypeByName("Text"));
-		concept.setConceptClass(Context.getConceptService().getConceptClassByName("Misc"));
-		Context.getConceptService().saveConcept(concept);
 
 		OpenmrsConceptUtil.getInstance().createConcept(new CV<String>("49051-6", CdaHandlerConstants.CODE_SYSTEM_LOINC), new PQ(BigDecimal.ONE, "wks"));
 		OpenmrsConceptUtil.getInstance().createConcept(new CV<String>("45371-2", CdaHandlerConstants.CODE_SYSTEM_LOINC), null);

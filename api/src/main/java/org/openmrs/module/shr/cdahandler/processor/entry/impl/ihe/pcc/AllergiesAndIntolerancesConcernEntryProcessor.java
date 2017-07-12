@@ -116,9 +116,11 @@ public class AllergiesAndIntolerancesConcernEntryProcessor extends ConcernEntryP
 				res.setSeverity(getConceptByGlobalProperty("allergy.concept.severity.moderate"));
 			if(severityObservationValue.getCode().equals("H"))
 					res.setSeverity(getConceptByGlobalProperty("allergy.concept.severity.severe"));
-			else
-				res.setSeverity(getConceptByGlobalProperty("allergy.concept.unknown"));
 		}
+		else if(observation.getCode().getCode().endsWith("INT"))
+			res.setSeverity(getConceptByGlobalProperty("allergy.concept.unknown"));
+		else
+			res.setSeverity(getConceptByGlobalProperty("allergy.concept.unknown"));
 		
 		// Are there manifestations (reactions)?
 		List<EntryRelationship> manifestationRelationship = this.findEntryRelationship(observation, CdaHandlerConstants.ENT_TEMPLATE_MANIFESTATION_RELATION);

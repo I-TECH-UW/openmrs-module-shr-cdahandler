@@ -28,7 +28,11 @@
   <concept concept_id="900005" datatype_id="4" class_id="5" is_set="0" retired="false"  date_created="2014-04-05" uuid="e936260e-38db-495e-b024-55c843450528"/>
   <concept concept_id="900006" datatype_id="4" class_id="5" is_set="0" retired="false"  date_created="2014-04-05" uuid="caeed6f3-3625-451b-984e-d7ca3b7cafe3"/>
   <concept concept_id="900007" datatype_id="4" class_id="5" is_set="0" retired="false"  date_created="2014-04-05" uuid="335c3b3a-98d9-4956-9ef0-f2bdc12cd744"/>
-	
+  <concept concept_id="90008" datatype_id="4" class_id="5" is_set="0" retired="false"  date_created="2014-04-05" uuid="1067AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"/>
+  <concept concept_id="90009" datatype_id="4" class_id="5" is_set="0" retired="false"  date_created="2014-04-05" uuid="1500AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"/>
+  <concept concept_id="90010" datatype_id="4" class_id="5" is_set="0" retired="false"  date_created="2014-04-05" uuid="1499AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"/>
+  <concept concept_id="90011" datatype_id="4" class_id="5" is_set="0" retired="false"  date_created="2014-04-05" uuid="1498AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"/>
+
   <concept_name concept_name_id="1340" concept_id="900000" name="RMIM CONCEPT 1" locale="en" date_created="2014-04-05" creator="1" voided="false" locale_preferred="0" concept_name_type="FULLY_SPECIFIED"/>
   <concept_name concept_name_id="1339" concept_id="900001" name="RMIM CONCEPT 2" locale="en" date_created="2014-04-05" creator="1" voided="false" locale_preferred="0" concept_name_type="FULLY_SPECIFIED"/>
   <concept_name concept_name_id="1338" concept_id="900002" name="RMIM CONCEPT 3" locale="en" date_created="2014-04-05" creator="1" voided="false" locale_preferred="0" concept_name_type="FULLY_SPECIFIED"/>
@@ -37,6 +41,10 @@
   <concept_name concept_name_id="1333" concept_id="900005" name="RMIM CONCEPT 6" locale="en" date_created="2014-04-05" creator="1" voided="false" locale_preferred="0" concept_name_type="FULLY_SPECIFIED"/>
   <concept_name concept_name_id="1333" concept_id="900006" name="RMIM CONCEPT 7" locale="en" date_created="2014-04-05" creator="1" voided="false" locale_preferred="0" concept_name_type="FULLY_SPECIFIED"/>
   <concept_name concept_name_id="1333" concept_id="900007" name="RMIM CONCEPT 8" locale="en" date_created="2014-04-05" creator="1" voided="false" locale_preferred="0" concept_name_type="FULLY_SPECIFIED"/>
+  <concept_name concept_name_id="1334" concept_id="90008" name="unknown allergy concept" locale="en" date_created="2004-03-02" creator="1" voided="false" locale_preferred="0" concept_name_type="FULLY_SPECIFIED"/>
+  <concept_name concept_name_id="1335" concept_id="90009" name="severe severity" locale="en" date_created="2004-03-02" creator="1" voided="false" locale_preferred="0" concept_name_type="FULLY_SPECIFIED"/>
+  <concept_name concept_name_id="1336" concept_id="90010" name="moderate severity" locale="en" date_created="2004-03-02" creator="1" voided="false" locale_preferred="0" concept_name_type="FULLY_SPECIFIED"/>
+  <concept_name concept_name_id="1337" concept_id="90011" name="mild severity" locale="en" date_created="2004-03-02" creator="1" voided="false" locale_preferred="0" concept_name_type="FULLY_SPECIFIED"/>
 
   <order_type order_type_id="40" description="Request to perform a procedure" retired="0" uuid="9506c6fe-d517-4707-a0c8-e72da23ff16d" name="Procedure Order" creator="1" date_created="2014-05-02" java_class_name="org.openmrs.module.shr.cdahandler.order.ProcedureOrder"/>
   <order_type order_type_id="41" description="Request to perform an observation" retired="0" uuid="7f14cf98-8452-42c0-acac-2ba96c8e66ce" name="Observation Order" creator="1" date_created="2014-05-02" java_class_name="org.openmrs.module.shr.cdahandler.order.ObservationOrder"/>

@@ -35,6 +35,24 @@ import org.openmrs.module.shr.cdahandler.processor.entry.impl.ActEntryProcessor;
 public class ConcernEntryProcessor extends ActEntryProcessor {
 
 	/**
+	 * Calculate the current status
+	 */
+	public static ActStatus calculateCurrentStatus(Condition res) {
+		if(res.getOnsetDate() == null && res.getEndDate() == null)
+			return ActStatus.New;
+		else if(res.getOnsetDate() != null && res.getEndDate() == null)
+			return ActStatus.Active;
+		else if(res.getVoided() && res.getEndDate() != null)
+			return ActStatus.Aborted;
+		else if(res.getVoided() && res.getEndDate() == null)
+			return ActStatus.Suspended;
+		else if(res.getEndDate() != null)
+			return ActStatus.Completed;
+		else
+			return null;
+	}
+
+	/**
 	 * Processes common list contents for the specified class
 	 * Auto generated method comment
 	 *
