@@ -17,7 +17,12 @@ import java.io.InputStream;
 import java.util.List;
 
 import org.marc.everest.rmim.uv.cdar2.pocd_mt000040uv.ClinicalDocument;
-import org.openmrs.*;
+import org.openmrs.Concept;
+import org.openmrs.ConceptReferenceTerm;
+import org.openmrs.ConceptSource;
+import org.openmrs.Obs;
+import org.openmrs.Order;
+import org.openmrs.Visit;
 import org.openmrs.api.OpenmrsService;
 import org.openmrs.module.shr.cdahandler.exception.DocumentImportException;
 import org.openmrs.module.shr.cdahandler.obs.ExtendedObs;

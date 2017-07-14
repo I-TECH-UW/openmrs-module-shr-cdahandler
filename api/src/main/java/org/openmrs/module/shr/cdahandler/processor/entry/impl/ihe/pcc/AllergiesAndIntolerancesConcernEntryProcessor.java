@@ -70,18 +70,19 @@ public class AllergiesAndIntolerancesConcernEntryProcessor extends ConcernEntryP
 		
 		// We don't track the allergy to an obs if we can help it..
 		Allergy res = super.createItem(act, obs, Allergy.class);
-		if(res.getAllergen()==null) res.setAllergen(new Allergen());
+		if(res.getAllergen() == null)
+			res.setAllergen(new Allergen());
 
 		// Now we have to dive into the allergen a little bit
 		if(observation.getParticipant().size() == 1 &&
 				observation.getParticipant().get(0).getParticipantRole() != null &&
 				observation.getParticipant().get(0).getParticipantRole().getPlayingEntityChoiceIfPlayingEntity() != null &&
 				observation.getParticipant().get(0).getParticipantRole().getPlayingEntityChoiceIfPlayingEntity().getCode() != null){
-			Concept concept=this.m_conceptUtil.getOrCreateConcept(observation.getParticipant().get(0).getParticipantRole().getPlayingEntityChoiceIfPlayingEntity().getCode());
+			Concept concept = this.m_conceptUtil.getOrCreateConcept(observation.getParticipant().get(0).getParticipantRole().getPlayingEntityChoiceIfPlayingEntity().getCode());
 			res.getAllergen().setCodedAllergen(concept);
 		}
-		else if(obs.getValueCoded() != null){
-			Concept concept=obs.getValueCoded();
+		else if(obs.getValueCoded() != null) {
+			Concept concept = obs.getValueCoded();
 			res.getAllergen().setCodedAllergen(concept);
 		}
 		else
@@ -129,8 +130,8 @@ public class AllergiesAndIntolerancesConcernEntryProcessor extends ConcernEntryP
 			Observation manifestationObservation = manifestationRelationship.get(0).getClinicalStatementIfObservation();
 			// Get the concept
 			Concept reactionConcept = this.m_conceptUtil.getOrCreateConcept((CV)manifestationObservation.getValue());
-			if(reactionConcept!=null)
-				res.addReaction(new AllergyReaction(res,reactionConcept,null));
+			if(reactionConcept != null)
+				res.addReaction(new AllergyReaction(res, reactionConcept, null));
 
 		}
 		else if(manifestationRelationship.size() > 1)

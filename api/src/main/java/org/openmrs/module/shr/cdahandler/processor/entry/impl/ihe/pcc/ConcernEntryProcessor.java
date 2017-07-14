@@ -99,9 +99,9 @@ public class ConcernEntryProcessor extends ActEntryProcessor {
 		if(previousItem == null && obs.getPreviousVersion() != null)
 		{
 			if(Condition.class.isAssignableFrom(clazz))
-				previousItem=getConditionByObs(obs,encounterInfo.getPatient());
+				previousItem = getConditionByObs(obs, encounterInfo.getPatient());
 			else if(Allergy.class.isAssignableFrom(clazz))
-				previousItem=getAllergyByObs(obs,encounterInfo.getPatient());
+				previousItem = getAllergyByObs(obs, encounterInfo.getPatient());
 		}
 
 		// Update the previous item
@@ -144,7 +144,7 @@ public class ConcernEntryProcessor extends ActEntryProcessor {
 
     }
 
-    private BaseOpenmrsData getConditionByObs(Obs obs, Patient patient){
+    private BaseOpenmrsData getConditionByObs(Obs obs, Patient patient) {
 		for(Condition condition : Context.getService(ConditionService.class).getActiveConditions(patient)){
 			if(obs.getValueCoded().equals(condition.getConcept()))
 				return condition;
@@ -152,7 +152,7 @@ public class ConcernEntryProcessor extends ActEntryProcessor {
 		return null;
 	}
 
-	private BaseOpenmrsData getAllergyByObs(Obs obs,Patient patient){
+	private BaseOpenmrsData getAllergyByObs(Obs obs, Patient patient) {
     	for(Allergy allergy : Context.getPatientService().getAllergies(patient)){
     		if(obs.getValueCoded().equals(allergy.getAllergen().getCodedAllergen()))
     			return allergy;

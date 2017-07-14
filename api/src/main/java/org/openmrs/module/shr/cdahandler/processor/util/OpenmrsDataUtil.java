@@ -283,8 +283,8 @@ public final class OpenmrsDataUtil {
 	{
 		try
 		{
-			PatientService allergyService=Context.getPatientService();
-			Allergies allergies=allergyService.getAllergies(patient);
+			PatientService allergyService = Context.getPatientService();
+			Allergies allergies = allergyService.getAllergies(patient);
 			for(II id : ids)
 			{
 				if(this.m_configuration.getAllergyRoot().equals(id.getRoot())) // Then try to get the ID

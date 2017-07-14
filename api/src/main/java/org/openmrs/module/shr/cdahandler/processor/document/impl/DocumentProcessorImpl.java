@@ -412,15 +412,15 @@ public abstract class DocumentProcessorImpl implements DocumentProcessor {
 				Context.getObsService().voidObs(obs, voidReason);
 				if(obs.getAccessionNumber() != null)
 				{
-					Patient patient=new Patient(obs.getPerson());
+					Patient patient = new Patient(obs.getPerson());
 					// TODO: Validate this is the correct behavior?
-					ConditionService conditionService=Context.getService(ConditionService.class);
-					for(Condition p : conditionService.getActiveConditions(patient)){
-						conditionService.voidCondition(p,voidReason);
+					ConditionService conditionService = Context.getService(ConditionService.class);
+					for(Condition p : conditionService.getActiveConditions(patient)) {
+						conditionService.voidCondition(p, voidReason);
 					}
-					PatientService allergyService=Context.getPatientService();
-					for(Allergy a: allergyService.getAllergies(new Patient(obs.getPerson()))){
-						allergyService.voidAllergy(a,voidReason);
+					PatientService allergyService = Context.getPatientService();
+					for(Allergy allergy : allergyService.getAllergies(new Patient(obs.getPerson()))) {
+						allergyService.voidAllergy(allergy, voidReason);
 					}
 				}
 			}

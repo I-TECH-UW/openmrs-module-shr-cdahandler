@@ -92,7 +92,7 @@ public class ConditionConcernEntryProcessor extends ConcernEntryProcessor {
 	 * Parse the contents of the Act to a Problem
 	 * @throws DocumentImportException
 	 */
-	protected void updateItem(Condition res,Act act, ExtendedObs obs) throws DocumentImportException {
+	protected void updateItem(Condition res, Act act, ExtendedObs obs) throws DocumentImportException {
 		// Effective time?
 		if(act.getEffectiveTime() != null)
 		{
