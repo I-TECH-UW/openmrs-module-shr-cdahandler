@@ -61,12 +61,10 @@ public final class OpenmrsDataUtil {
 	/**
 	 * Get the singleton instance
 	 */
-	public static OpenmrsDataUtil getInstance()
-	{
+	public static OpenmrsDataUtil getInstance() {
 		if (s_instance == null) {
 			synchronized (s_lockObject) {
-				if(s_instance == null) // Another thread might have created while we were waiting for a lock
-				{
+				if(s_instance == null) { // Another thread might have created while we were waiting for a lock
 					s_instance = new OpenmrsDataUtil();
 				}
 			}
@@ -187,14 +185,14 @@ public final class OpenmrsDataUtil {
 			ByteArrayInputStream textStream = new ByteArrayInputStream(((ED)value).getData());
 			ComplexData complexData = new ComplexData(title, textStream);
 			observation.setComplexData(complexData);
-		} else if(value instanceof SD) {
+		} else if (value instanceof SD) {
 			ByteArrayInputStream textStream = new ByteArrayInputStream(((SD) value).toString().getBytes());
 			ComplexData complexData = new ComplexData("observationdata", textStream);
 			observation.setComplexData(complexData);
-		} else if(value instanceof CS || value instanceof CO) {
+		} else if (value instanceof CS || value instanceof CO) {
 			
 			CE<?> codeValue = null;
-			if(value instanceof CO) {
+			if (value instanceof CO) {
 				if (((CO)value).getValue() != null) {
 					observation.setValueNumeric(((CO) value).toDouble());
 				} else {
@@ -235,14 +233,15 @@ public final class OpenmrsDataUtil {
 		//return this.findExistingItem(ids, this.m_configuration.getObsRoot(), Context.getObsService().getObservationsByPerson(patient));
 		try {
 			for (II id : ids) {
-				if(this.m_configuration.getObsRoot().equals(id.getRoot())) // Then try to get the ID
+				if (this.m_configuration.getObsRoot().equals(id.getRoot())) // Then try to get the ID
 				{
 					return Context.getService(CdaImportService.class).getExtendedObs(Integer.parseInt(id.getExtension()));
 				} else {
 					List<Obs> candidate = Context.getService(CdaImportService.class).getObsByAccessionNumber(this.m_datatypeUtil.formatIdentifier(id));
 					log.debug(String.format("Foun d %s existing obs", candidate.size()));
-					if(candidate.size() > 0)
+					if (candidate.size() > 0) {
 						return Context.getService(CdaImportService.class).getExtendedObs(candidate.get(0).getId());
+					}
 				}
 			}
 			return null;
@@ -260,12 +259,12 @@ public final class OpenmrsDataUtil {
 		//return this.findExistingItem(ids, this.m_configuration.getObsRoot(), Context.getObsService().getObservationsByPerson(patient));
 		try {
 			for (II id : ids) {
-				if(this.m_configuration.getOrderRoot().equals(id.getRoot())) // Then try to get the ID
+				if (this.m_configuration.getOrderRoot().equals(id.getRoot())) // Then try to get the ID
 				{
 					return Context.getOrderService().getOrder(Integer.parseInt(id.getExtension()));
 				} else {
 					List<Order> candidate = Context.getService(CdaImportService.class).getOrdersByAccessionNumber(this.m_datatypeUtil.formatIdentifier(id));
-					if(candidate.size() > 0)
+					if (candidate.size() > 0)
 						return candidate.get(0);
 				}
 			}
@@ -360,7 +359,7 @@ public final class OpenmrsDataUtil {
 			order.setUrgency(Urgency.ON_SCHEDULED_DATE);
 		} else if (priorityCode.equals(ActPriority.Routine)) {
 			order.setUrgency(Urgency.ROUTINE);
-		} else if(priorityCode.equals(ActPriority.Emergency)) {
+		} else if (priorityCode.equals(ActPriority.Emergency)) {
 			order.setCommentToFulfiller("Emergency");
 			order.setUrgency(Urgency.STAT);
 		} else {
@@ -386,14 +385,14 @@ public final class OpenmrsDataUtil {
 		// Set the value
 		if (value instanceof ANY) {
 			this.setObsValue(res, (ANY) value);
-		} else if(value instanceof Drug) {
+		} else if (value instanceof Drug) {
 			res.setValueCoded(((Drug)value).getConcept());
 			res.setValueDrug((Drug)value);
-		} else if(value instanceof Concept) {
+		} else if (value instanceof Concept) {
 			res.setValueCoded((Concept) value);
-		} else if(value instanceof String) {
+		} else if (value instanceof String) {
 			res.setValueText(value.toString());
-		} else if(value instanceof BigDecimal) {
+		} else if (value instanceof BigDecimal) {
 			res.setValueNumeric(((BigDecimal) value).doubleValue());
 		}
 		return res;

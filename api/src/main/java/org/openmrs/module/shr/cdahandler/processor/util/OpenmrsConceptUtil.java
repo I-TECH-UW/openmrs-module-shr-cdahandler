@@ -60,8 +60,7 @@ public final class OpenmrsConceptUtil extends OpenmrsMetadataUtil {
 	public static OpenmrsConceptUtil getInstance() {
 		if (s_instance == null) {
 			synchronized (s_lockObject) {
-				if(s_instance == null) // Another thread might have created while we were waiting for a lock
-				{
+				if(s_instance == null) { // Another thread might have created while we were waiting for a lock
 					s_instance = new OpenmrsConceptUtil();
 					s_instance.initializeInstance();
 				}
@@ -467,7 +466,9 @@ public final class OpenmrsConceptUtil extends OpenmrsMetadataUtil {
 		if (foundConcept == null && code.getTranslation() != null) {
 			for (CE<?> translation : code.getTranslation()) {
 				foundConcept = this.getConcept(translation, null);
-				if (foundConcept != null) break;
+				if (foundConcept != null) {
+					break;
+				}
 			}
 		}
 		
@@ -589,8 +590,7 @@ public final class OpenmrsConceptUtil extends OpenmrsMetadataUtil {
 		Concept drugConcept = null;
 		drugConcept = this.getOrCreateDrugConcept(drugCode);
 		
-		if (drugConcept == null && name != null) // Find by a name? Maybe?
-		{
+		if (drugConcept == null && name != null) { // Find by a name? Maybe?
 			drugConcept = this.m_conceptService.getConcept(name.toString());
 		}
 		// HACK: Fallback
@@ -632,11 +632,9 @@ public final class OpenmrsConceptUtil extends OpenmrsMetadataUtil {
 			}
 		}
 		// Process the search results
-		if (candidateDrugWithMatchingForm != null)// found one
-		{
+		if (candidateDrugWithMatchingForm != null) { // found one
 			return candidateDrugWithMatchingForm;
-		} else if (candidateDrugWithMatchingForm == null && this.m_configuration.getAutoCreateConcepts()) // found none and can create
-		{
+		} else if (candidateDrugWithMatchingForm == null && this.m_configuration.getAutoCreateConcepts()) { // found none and can create
 			Drug retVal = new Drug();
 			
 			// Set name

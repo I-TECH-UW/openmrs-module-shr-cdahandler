@@ -78,8 +78,7 @@ public class CdaImportServiceImpl extends BaseOpenmrsService implements CdaImpor
 	 * @see org.openmrs.module.shr.cdahandler.api.CdaImportService#importDocument(java.io.InputStream)
 	 */
 	@Override
-	public Visit importDocument(InputStream doc) throws DocumentImportException
-	{
+	public Visit importDocument(InputStream doc) throws DocumentImportException {
 		
 		// Formatter
 		XmlIts1Formatter formatter = EverestUtil.createFormatter();
@@ -91,27 +90,24 @@ public class CdaImportServiceImpl extends BaseOpenmrsService implements CdaImpor
 
 		// Validation messages?
 		ValidationIssueCollection parsingIssues = new ValidationIssueCollection();
-		for(IResultDetail dtl : parseResult.getDetails())
-		{
-			if(dtl.getType() == ResultDetailType.ERROR && !(dtl instanceof DatatypeValidationResultDetail))
-			{
+		for (IResultDetail dtl : parseResult.getDetails()) {
+			if (dtl.getType() == ResultDetailType.ERROR && !(dtl instanceof DatatypeValidationResultDetail)) {
 				parsingIssues.error(String.format("HL7v3 Validation: %s at %s", dtl.getMessage(), dtl.getLocation()));
-				if(dtl.getException() != null)
-				{
+				if (dtl.getException() != null) {
 					log.error("Error", dtl.getException());
 				}
-			}
-			else  
+			} else {
 				parsingIssues.warn(String.format("HL7v3 Validation: %s at %s", dtl.getMessage(), dtl.getLocation()));
+			}
 		}
 		
 		// Any serious validation has errors or structure is null?
-		if(parsingIssues.hasErrors() || parseResult.getStructure() == null)
+		if (parsingIssues.hasErrors() || parseResult.getStructure() == null) {
 			throw new DocumentValidationException(parseResult.getStructure(), parsingIssues);
+		}
 		
 		// Get the clinical document
 		return this.importDocument((ClinicalDocument)parseResult.getStructure());
-
 	}
 	
 	/**
@@ -123,39 +119,44 @@ public class CdaImportServiceImpl extends BaseOpenmrsService implements CdaImpor
 	 * @throws DocumentImportException
 	 */
 	@Override
-	public Visit importDocument(ClinicalDocument clinicalDocument) throws DocumentImportException
-	{
-		if(this.m_processor == null)
+	public Visit importDocument(ClinicalDocument clinicalDocument) throws DocumentImportException {
+		if (this.m_processor == null) {
 			this.m_processor = CdaImporter.getInstance();
+		}
 	
 		// TODO: Store incoming to a temporary table for CDAs (like the HL7 queue)
 		Visit retVal = this.m_processor.processCdaDocument(clinicalDocument);
 
 		// Notify of successful import
-		if(retVal != null)
-		{
+		if (retVal != null) {
 			Stack<CdaImportSubscriber> toBeNotified = new Stack<CdaImportSubscriber>();
 			
 			// The generic ones for all 
 			Set<CdaImportSubscriber> candidates = this.m_subscribers.get("*");
-			if(candidates != null)
-				for(CdaImportSubscriber subscriber : candidates)
+			if (candidates != null) {
+				for (CdaImportSubscriber subscriber : candidates) {
 					toBeNotified.push(subscriber);
+				}
+			}
 			
 			// Notify the default always
-			for(II templateId : clinicalDocument.getTemplateId())
-			{
+			for (II templateId : clinicalDocument.getTemplateId()) {
 				candidates = this.m_subscribers.get(templateId.getRoot());
-				if(candidates == null) continue; // no candidates
+				if (candidates == null) {
+					continue; // no candidates
+				}
 				
-				for(CdaImportSubscriber subscriber : candidates)
-					if(!toBeNotified.contains(subscriber))
+				for (CdaImportSubscriber subscriber : candidates) {
+					if (!toBeNotified.contains(subscriber)) {
 						toBeNotified.push(subscriber);
+					}
+				}
 			}
 			
 			// Notify the found subscribers
-			while(!toBeNotified.isEmpty())
+			while (!toBeNotified.isEmpty()) {
 				toBeNotified.pop().onDocumentImported(clinicalDocument, retVal);
+			}
 		}
 		
 		return retVal;
@@ -168,16 +169,19 @@ public class CdaImportServiceImpl extends BaseOpenmrsService implements CdaImpor
     public void subscribeImport(String templateId, CdaImportSubscriber singletonImporter) {
 	    
 		// Ensure template ID has a value
-		if(templateId == null)
-	    	templateId = "*";
+		if (templateId == null) {
+			templateId = "*";
+		}
 	    
 		// Does the key exist?
-		if(!this.m_subscribers.containsKey(templateId))
+		if (!this.m_subscribers.containsKey(templateId)) {
 			this.m_subscribers.put(templateId, new HashSet<CdaImportSubscriber>());
+		}
 		
 		// Add
-		if(!this.m_subscribers.get(templateId).contains(singletonImporter))
+		if (!this.m_subscribers.get(templateId).contains(singletonImporter)) {
 			this.m_subscribers.get(templateId).add(singletonImporter);
+		}
     }
 
 	/**
@@ -302,12 +306,13 @@ public class CdaImportServiceImpl extends BaseOpenmrsService implements CdaImpor
 
 		List<Concept> retVal = new ArrayList<Concept>();
 		
-		for(Concept concept : terms)
-		{
-			for(ConceptMap map : concept.getConceptMappings())
-				if(map.getConceptReferenceTerm().getId().equals(term.getId()) &&
-						map.getConceptMapType().getName().toLowerCase().equals(strength.toLowerCase()))
+		for (Concept concept : terms) {
+			for (ConceptMap map : concept.getConceptMappings()) {
+				if (map.getConceptReferenceTerm().getId().equals(term.getId()) &&
+						map.getConceptMapType().getName().toLowerCase().equals(strength.toLowerCase())) {
 					retVal.add(concept);
+				}
+			}
 		}
 
 		return retVal;

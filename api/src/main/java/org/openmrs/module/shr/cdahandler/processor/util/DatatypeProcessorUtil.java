@@ -51,7 +51,7 @@ public final class DatatypeProcessorUtil {
 				{
 					s_instance = new DatatypeProcessorUtil();
 					s_instance.m_configuration = CdaHandlerConfiguration.getInstance();
-					
+
 				}
 			}
 		}
@@ -93,7 +93,7 @@ public final class DatatypeProcessorUtil {
 			if(property == null && properties == null) continue;
 			
 			// everest annotations are on getters
-			if(!m.getName().startsWith("get")) 
+			if(!m.getName().startsWith("get"))
 				continue;
 				
 			// Is there another property in destination?
@@ -117,7 +117,7 @@ public final class DatatypeProcessorUtil {
 						shouldCopy |= (sourceContext.getPropertyAnnotation() != null &&
 							traversalsToCopy.contains(sourceContext.getPropertyAnnotation().name()) &&
 							sourceContext.getPropertyAnnotation().name().equals(destinationContext.getPropertyAnnotation().name()));
-				
+
 				// If properties found then cascade 
 				if(shouldCopy)
 				{
@@ -125,8 +125,8 @@ public final class DatatypeProcessorUtil {
 					if(destinationContext.getSetterMethod().getParameterTypes()[0].isAssignableFrom(destObj.getClass()))
 						destinationContext.getSetterMethod().invoke(destination, destObj);
 				}
-			
-		                
+
+
             }
 			catch(NoSuchMethodException e)
 			{

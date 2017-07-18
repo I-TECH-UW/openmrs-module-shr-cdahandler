@@ -110,21 +110,22 @@ public abstract class DocumentProcessorImpl implements DocumentProcessor {
 	{
 		
 		// Validate
-		if(this.m_configuration.getValidationEnabled())
+		if (this.m_configuration.getValidationEnabled())
 		{
 			ValidationIssueCollection issues = this.validate(doc);
-			if(issues.hasErrors())
+			if (issues.hasErrors()) {
 				throw new DocumentValidationException(doc, issues);
+			}
 		}
 		
 		Visit visitInformation = this.processHeader(doc);
 		
 		// Encounters - This may be a level 1 document so we better check
-		if(doc.getComponent().getBodyChoiceIfNonXMLBody() != null)
+		if (doc.getComponent().getBodyChoiceIfNonXMLBody() != null) {
 			visitInformation = this.processLevel1Content(doc, visitInformation);
-		else // level 2 , just hand-off to a StructuredBodyDocumentProcessor
+		} else { // level 2 , just hand-off to a StructuredBodyDocumentProcessor
 			visitInformation = this.processLevel2Content(doc, visitInformation);
-
+		}
 		return visitInformation;
 	}
 
@@ -137,26 +138,26 @@ public abstract class DocumentProcessorImpl implements DocumentProcessor {
 	protected Visit processHeader(ClinicalDocument doc) throws DocumentImportException
 	{
 		// Don't parse null elements
-		if(doc == null || doc.getNullFlavor() != null)
+		if (doc == null || doc.getNullFlavor() != null) {
 			return null; // TODO: Should this be something more descriptive of what happened?
-
+		}
 		// TODO: How to add an attribute which points to the CDA from which the visit was constructed
 		// Parse the header
-		if(doc.getRecordTarget().size() != 1)
+		if (doc.getRecordTarget().size() != 1) {
 			throw new DocumentImportException("Can only handle documents with exactly one patient");
+		}
 		Patient patient = this.m_patientRoleProcessorUtil.processPatient(doc.getRecordTarget().get(0).getPatientRole());
 		
 		// Look up the visit information
 		Visit visitInformation = this.m_openmrsDataUtil.getVisitById(doc.getId(), patient); 
 				
-		if(visitInformation == null)
+		if (visitInformation == null) {
 			visitInformation = new Visit();
-		else if(this.m_configuration.getUpdateExisting())
-		{
+		} else if (this.m_configuration.getUpdateExisting()) {
 			visitInformation.setDateChanged(doc.getEffectiveTime().getDateValue().getTime());
-		}
-		else
+		} else {
 			throw new DocumentImportException(String.format("Cannot persist a duplicate document %s!", doc.getId()));
+		}
 
 		// Create an encounter for the of the document
 		Encounter visitEncounter = new Encounter();
@@ -165,37 +166,32 @@ public abstract class DocumentProcessorImpl implements DocumentProcessor {
 		visitInformation.setPatient(patient);
 		
 		// Are we explicitly appending/replacing data?
-		for(RelatedDocument dr : doc.getRelatedDocument())
-		{
-			if(dr.getParentDocument() == null || dr.getParentDocument().getNullFlavor() != null)
+		for (RelatedDocument dr : doc.getRelatedDocument()) {
+			if (dr.getParentDocument() == null || dr.getParentDocument().getNullFlavor() != null) {
 				continue;
+			}
 			
 			// Old visit found?
 			Visit oldVisit = null;
-			for(int i = 0; i < dr.getParentDocument().getId().size() && oldVisit == null; i++)
-			{
+			for (int i = 0; i < dr.getParentDocument().getId().size() && oldVisit == null; i++) {
 				oldVisit = this.m_openmrsDataUtil.getVisitById(dr.getParentDocument().getId().get(i), visitInformation.getPatient());
 
-				if(oldVisit == null)
+				if (oldVisit == null) {
 					log.warn(String.format("Can't find the visit identified as %s to be associated", FormatterUtil.toWireFormat(dr.getParentDocument().getId())));
-				else if(dr.getTypeCode().getCode().equals(x_ActRelationshipDocument.RPLC)) // Replacement of
-				{
+				} else if (dr.getTypeCode().getCode().equals(x_ActRelationshipDocument.RPLC)) { // Replacement of
 					this.voidVisitData(oldVisit, doc.getId());
-				}
-				else if(dr.getTypeCode().getCode().equals(x_ActRelationshipDocument.APND))
-				{
+				} else if (dr.getTypeCode().getCode().equals(x_ActRelationshipDocument.APND)) {
 					// Append, so that means we're updating the visit with a new encounter!
 					visitInformation = oldVisit; // TODO: See if this is the correct way to do this
 					visitInformation.setDateChanged(doc.getEffectiveTime().getDateValue().getTime());
-				}
-				else
+				} else {
 					log.warn(String.format("Don't understand the relationship type %s", FormatterUtil.toWireFormat(dr.getTypeCode())));
+				}
 			}
 		}
 				
 		// Parse the authors of this document
-		for(Author aut : doc.getAuthor())
-		{
+		for (Author aut : doc.getAuthor()) {
 			// TODO: Figure out where to stuff aut.getTime() .
 			// This element represents the time that the author started participating in the creation of the clinical document .. Is it important?
 			Provider provider = this.m_assignedEntityProcessorUtil.processProvider(aut.getAssignedAuthor());
@@ -204,14 +200,14 @@ public abstract class DocumentProcessorImpl implements DocumentProcessor {
 			
 			// Assign this author as the creator or updater
 			User createdOrUpdatedBy = this.m_openmrsDataUtil.getUser(provider);
-			if(createdOrUpdatedBy != null)
-			{
+			if (createdOrUpdatedBy != null) {
 				visitEncounter.setCreator(createdOrUpdatedBy);
-				if(visitInformation.getChangedBy() != null &&
-						visitInformation.getDateChanged() != null)
+				if (visitInformation.getChangedBy() != null &&
+						visitInformation.getDateChanged() != null) {
 					visitInformation.setChangedBy(createdOrUpdatedBy);
-				else if(visitInformation.getCreator() != null)
+				} else if (visitInformation.getCreator() != null) {
 					visitInformation.setCreator(createdOrUpdatedBy);
+				}
 			}
 			
 		}
@@ -222,8 +218,7 @@ public abstract class DocumentProcessorImpl implements DocumentProcessor {
 		//	Participants = Spouses, fathers, etc. related to the record target
 		
 		// TODO: Confidentiality (discussion about privacy enforcement)
-		if(doc.getConfidentialityCode() != null && !doc.getConfidentialityCode().isNull())
-		{
+		if (doc.getConfidentialityCode() != null && !doc.getConfidentialityCode().isNull()) {
 			VisitAttribute confidentiality = new VisitAttribute();
 			confidentiality.setAttributeType(this.m_openmrsMetadataUtil.getOrCreateVisitConfidentialityCodeAttributeType());
 			confidentiality.setValueReferenceInternal(this.m_datatypeProcessorUtil.formatSimpleCode(doc.getConfidentialityCode()));
@@ -232,59 +227,60 @@ public abstract class DocumentProcessorImpl implements DocumentProcessor {
 		
 		// Custodian - Approximately the location where the event or original data is store
 		// TODO: Provenance data, do we need to store this?
-		if(doc.getCustodian() != null && doc.getCustodian().getNullFlavor() == null &&
-				doc.getCustodian().getAssignedCustodian() != null && doc.getCustodian().getAssignedCustodian().getNullFlavor() == null)
-		{
+		if (doc.getCustodian() != null && doc.getCustodian().getNullFlavor() == null &&
+				doc.getCustodian().getAssignedCustodian() != null && doc.getCustodian().getAssignedCustodian().getNullFlavor() == null) {
 			visitInformation.setLocation(this.m_locationOrganizationProcessorUtil.processOrganization(doc.getCustodian().getAssignedCustodian().getRepresentedCustodianOrganization()));
 		}
 		
 		// TODO: DocumentationOf (perhaps as an encounter related to the Visit with an EncounterType of CDA Service Information)
 		// DocumentationOf identifies the visit or service event that occurred 
 		// Let's only process one service event, mapping it to the Visit with entries 
-		if(doc.getDocumentationOf().size() == 1)
-		{
+		if (doc.getDocumentationOf().size() == 1) {
 			ServiceEvent serviceEvent = doc.getDocumentationOf().get(0).getServiceEvent();
 			// Effective time should represent the start/stop time of the visit
-			if(serviceEvent.getEffectiveTime() != null && !serviceEvent.getEffectiveTime().isNull())
-			{ 
+			if (serviceEvent.getEffectiveTime() != null && !serviceEvent.getEffectiveTime().isNull()) {
 				// FROM
-				if(serviceEvent.getEffectiveTime().getLow() != null && !serviceEvent.getEffectiveTime().getLow().isNull())
+				if (serviceEvent.getEffectiveTime().getLow() != null && !serviceEvent.getEffectiveTime().getLow().isNull()) {
 					visitInformation.setStartDatetime(serviceEvent.getEffectiveTime().getLow().getDateValue().getTime());
+				}
 				// TO
-				if(serviceEvent.getEffectiveTime().getHigh() != null && !serviceEvent.getEffectiveTime().getHigh().isNull())
+				if (serviceEvent.getEffectiveTime().getHigh() != null && !serviceEvent.getEffectiveTime().getHigh().isNull()) {
 					visitInformation.setStopDatetime(serviceEvent.getEffectiveTime().getHigh().getDateValue().getTime());
+				}
 			}
 			
 			// Add performers with their function this is used when the provider is referenced elsewhere in the document
-			for(Performer1 prf : serviceEvent.getPerformer())
-			{
+			for (Performer1 prf : serviceEvent.getPerformer()) {
 				Provider provider = this.m_assignedEntityProcessorUtil.processProvider(prf.getAssignedEntity());
 				EncounterRole role = this.m_openmrsMetadataUtil.getOrCreateEncounterRole(prf.getFunctionCode());
 				visitEncounter.addProvider(role, provider);
 			}
-		}
-		else if(doc.getDocumentationOf().size() > 1)
+		} else if (doc.getDocumentationOf().size() > 1) {
 			throw new NotImplementedException("OpenSHR cannot store more than one serviceEvent.. yet");
+		}
 		
 		// TODO: If no service is specified we have to specify that the date is the exact instant the visit started
-		if(visitInformation.getStartDatetime() == null)
+		if (visitInformation.getStartDatetime() == null) {
 			visitInformation.setStartDatetime(doc.getEffectiveTime().getDateValue().getTime());
-		if(visitInformation.getStopDatetime() == null)
+		}
+		if (visitInformation.getStopDatetime() == null) {
 			visitInformation.setStopDatetime(doc.getEffectiveTime().add(new PQ(BigDecimal.ONE, "s")).getDateValue().getTime());
+		}
 		
 		// Effective time
-		if(visitInformation.getDateCreated() == null)
+		if (visitInformation.getDateCreated() == null) {
 			visitInformation.setDateCreated(doc.getEffectiveTime().getDateValue().getTime());
+		}
 
 		// Participants and their relationship
-		for(Participant1 ptcpt : doc.getParticipant())
-		{
-			if(ptcpt == null || ptcpt.getNullFlavor() != null ||
+		for (Participant1 ptcpt : doc.getParticipant()) {
+			if (ptcpt == null || ptcpt.getNullFlavor() != null ||
 					ptcpt.getAssociatedEntity() == null ||
 					ptcpt.getAssociatedEntity().getNullFlavor() != null ||
 					ptcpt.getAssociatedEntity().getAssociatedPerson() == null ||
-					ptcpt.getAssociatedEntity().getAssociatedPerson().getNullFlavor() != null)
+					ptcpt.getAssociatedEntity().getAssociatedPerson().getNullFlavor() != null) {
 				continue;
+			}
 			
 			// Process the relationship
 			Relationship rel = this.m_personProcessorUtil.processAssociatedEntity(ptcpt.getAssociatedEntity(), visitInformation.getPatient());
@@ -294,40 +290,41 @@ public abstract class DocumentProcessorImpl implements DocumentProcessor {
 					endTime = null;
 			
 			// Explicit time provided
-			if(ptcpt.getTime() != null)
-			{
-				if(ptcpt.getTime().getValue() != null)
+			if (ptcpt.getTime() != null) {
+				if (ptcpt.getTime().getValue() != null) {
 					startTime = ptcpt.getTime().getValue().getDateValue().getTime();
-				if(ptcpt.getTime().getLow() != null && !ptcpt.getTime().getLow().isNull())
+				}
+				if (ptcpt.getTime().getLow() != null && !ptcpt.getTime().getLow().isNull()) {
 					startTime = ptcpt.getTime().getLow().getDateValue().getTime();
-				if(ptcpt.getTime().getHigh() != null && !ptcpt.getTime().getHigh().isNull())
+				}
+				if (ptcpt.getTime().getHigh() != null && !ptcpt.getTime().getHigh().isNull()) {
 					endTime = ptcpt.getTime().getHigh().getDateValue().getTime();
+				}
 			}
 
 			// Update the known time the relationship existed based on times provided
 			// Start time was provided, and either the start date occurs before the existing start
 			// date of the relationship on file (Extended the known time) or there is no start date
 			// on file
-			if(startTime != null && (rel.getStartDate() != null &&
+			if (startTime != null && (rel.getStartDate() != null &&
 					startTime.before(rel.getStartDate())  
-					|| rel.getStartDate() == null))
+					|| rel.getStartDate() == null)) {
 				rel.setStartDate(startTime);
+			}
 			// End time was provided and either the end date occurs after the current end date
 			// of the relationship (extending the known time) or there is no end date on file
-			if(endTime != null && (rel.getEndDate() != null &&
-					endTime.after(rel.getEndDate()) || rel.getEndDate() != null))
+			if (endTime != null && (rel.getEndDate() != null &&
+					endTime.after(rel.getEndDate()) || rel.getEndDate() != null)) {
 				rel.setEndDate(endTime);
-			
+			}
 			Context.getPersonService().saveRelationship(rel);
 		}
 
 		// Parse informants
-		for(Informant12 inf : doc.getInformant())
-		{
-			if(inf.getInformantChoice().isPOCD_MT000040UVRelatedEntity())
+		for (Informant12 inf : doc.getInformant()) {
+			if (inf.getInformantChoice().isPOCD_MT000040UVRelatedEntity()) {
 				throw new NotImplementedException("OpenSHR cannot store informants of type related persons .. yet");
-			else
-			{
+			} else {
 				Provider provider = this.m_assignedEntityProcessorUtil.processProvider(inf.getInformantChoiceIfAssignedEntity());
 				EncounterRole role = this.m_openmrsMetadataUtil.getOrCreateEncounterRole(inf.getTypeCode());
 				visitEncounter.addProvider(role, provider);
@@ -337,8 +334,7 @@ public abstract class DocumentProcessorImpl implements DocumentProcessor {
 		// TODO: Information recipient : Do we need to store this?
 		
 		// Parse the legal authenticator
-		if(doc.getLegalAuthenticator() != null)
-		{
+		if (doc.getLegalAuthenticator() != null) {
 			// TODO: Where to store signature code? Or is it enough that this data would be stored in the provenance with the document?
 			Provider provider = this.m_assignedEntityProcessorUtil.processProvider(doc.getLegalAuthenticator().getAssignedEntity());
 			EncounterRole role = this.m_openmrsMetadataUtil.getOrCreateEncounterRole(doc.getLegalAuthenticator().getTypeCode());
@@ -346,8 +342,7 @@ public abstract class DocumentProcessorImpl implements DocumentProcessor {
 		}
 
 		// Parse dataEnterer - the person that entered the data
-		if(doc.getDataEnterer() != null)
-		{
+		if (doc.getDataEnterer() != null) {
 			// TODO: Where to store the time the data was entered?
 			Provider provider = this.m_assignedEntityProcessorUtil.processProvider(doc.getDataEnterer().getAssignedEntity());
 			EncounterRole role = this.m_openmrsMetadataUtil.getOrCreateEncounterRole(doc.getDataEnterer().getTypeCode());
@@ -355,8 +350,7 @@ public abstract class DocumentProcessorImpl implements DocumentProcessor {
 		}
 
 		// ID? Some basic provenance data
-		if(doc.getId() != null && !doc.getId().isNull())
-		{
+		if (doc.getId() != null && !doc.getId().isNull()) {
 			VisitAttribute provenance = new VisitAttribute();
 			provenance.setAttributeType(this.m_openmrsMetadataUtil.getOrCreateVisitExternalIdAttributeType());
 			provenance.setValueReferenceInternal(this.m_datatypeProcessorUtil.formatIdentifier(doc.getId()));
@@ -365,16 +359,15 @@ public abstract class DocumentProcessorImpl implements DocumentProcessor {
 
 		// Type of visit
 		String visitTypeName = this.getTemplateName();
-		if(visitTypeName == null)
-		{
-			if(doc.getCode() != null && !doc.getCode().isNull())
-			{
+		if (visitTypeName == null) {
+			if (doc.getCode() != null && !doc.getCode().isNull()) {
 				visitTypeName = doc.getCode().getDisplayName();
-				if(visitTypeName == null)
+				if (visitTypeName == null) {
 					visitTypeName = doc.getCode().getCode();
-			}
-			else
+				}
+			} else {
 				visitTypeName = "UNKNOWN";
+			}
 		}
 		visitInformation.setVisitType(this.m_openmrsMetadataUtil.getVisitType(visitTypeName));
 
@@ -410,30 +403,26 @@ public abstract class DocumentProcessorImpl implements DocumentProcessor {
 		Context.getVisitService().voidVisit(oldVisit, voidReason);
 
 		// Void the encounter and all observations 
-		for(Encounter enc : oldVisit.getEncounters())
-		{
+		for (Encounter enc : oldVisit.getEncounters()) {
 			log.info(String.format("Voided %s", enc));
 			Context.getEncounterService().voidEncounter(enc, voidReason);
-			for(Obs obs : enc.getObs())
-			{
+			for (Obs obs : enc.getObs()) {
 				log.info(String.format("Voided %s", obs));
 				Context.getObsService().voidObs(obs, voidReason);
-				if(obs.getAccessionNumber() != null)
-				{
+				if (obs.getAccessionNumber() != null) {
 					Patient patient = new Patient(obs.getPerson());
 					// TODO: Validate this is the correct behavior?
 					ConditionService conditionService = Context.getService(ConditionService.class);
-					for(Condition p : conditionService.getActiveConditions(patient)) {
+					for (Condition p : conditionService.getActiveConditions(patient)) {
 						conditionService.voidCondition(p, voidReason);
 					}
 					PatientService allergyService = Context.getPatientService();
-					for(Allergy allergy : allergyService.getAllergies(new Patient(obs.getPerson()))) {
+					for (Allergy allergy : allergyService.getAllergies(new Patient(obs.getPerson()))) {
 						allergyService.voidAllergy(allergy, voidReason);
 					}
 				}
 			}
-			for(Order ord : enc.getOrders())
-			{
+			for (Order ord : enc.getOrders()) {
 				log.info(String.format("Voided %s", ord));
 				Context.getOrderService().voidOrder(ord, voidReason);
 			}
@@ -495,12 +484,10 @@ public abstract class DocumentProcessorImpl implements DocumentProcessor {
 		ProcessorContext childContext = new ProcessorContext(structuredBody, visitEncounter, this, rootContext);
 				
 		// Iterate through sections saving them
-		for(Component3 comp : structuredBody.getComponent())
-		{
+		for (Component3 comp : structuredBody.getComponent()) {
 			// empty section?
-			if(comp == null || comp.getNullFlavor() != null ||
-					comp.getSection() == null || comp.getSection().getNullFlavor() != null)
-			{
+			if (comp == null || comp.getNullFlavor() != null ||
+					comp.getSection() == null || comp.getSection().getNullFlavor() != null) {
 				log.warn("Component is missing section. Skipping");
 				continue;
 			}
@@ -536,8 +523,9 @@ public abstract class DocumentProcessorImpl implements DocumentProcessor {
 	{
 		ValidationIssueCollection validationMessages = new ValidationIssueCollection();
 		
-		if(!(object instanceof ClinicalDocument))
+		if (!(object instanceof ClinicalDocument)) {
 			validationMessages.error(String.format("Expected ClinicalDocument, got %s", object.getClass()));
+		}
 		return validationMessages;
 	}
 }
