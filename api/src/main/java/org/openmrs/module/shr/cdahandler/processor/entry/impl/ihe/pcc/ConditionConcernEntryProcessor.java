@@ -56,14 +56,13 @@ public class ConditionConcernEntryProcessor extends ConcernEntryProcessor {
     protected void parseActContents(Act act, ClinicalStatement statement) throws DocumentImportException {
 		EntryProcessor processor = EntryProcessorFactory.getInstance().createProcessor(statement);
 		processor.setContext(this.getContext());
-
 		
 		BaseOpenmrsData processed = processor.process(statement);
 		
 		// Not a problem observation so don't create a problem
-		
-		if(!statement.getTemplateId().contains(new II(CdaHandlerConstants.ENT_TEMPLATE_PROBLEM_OBSERVATION)))
+		if(!statement.getTemplateId().contains(new II(CdaHandlerConstants.ENT_TEMPLATE_PROBLEM_OBSERVATION))) {
 			return;
+		}
 		
 		ExtendedObs obs = (ExtendedObs)processed;
 		
@@ -72,17 +71,18 @@ public class ConditionConcernEntryProcessor extends ConcernEntryProcessor {
 		this.updateItem(res,act,obs);
 			
 		// Concept
-		if(obs.getValueCoded() == null)
+		if (obs.getValueCoded() == null) {
 			throw new DocumentImportException("Observation for this problem must be of type Coded");
-		else if(res.getConcept() == null)
+		} else if (res.getConcept() == null) {
 			res.setConcept(obs.getValueCoded());
-		
+		}
 		
 		// Status
-		if(act.getNegationInd() != null && act.getNegationInd().toBoolean())
+		if (act.getNegationInd() != null && act.getNegationInd().toBoolean()) {
 			res.setStatus(Condition.Status.INACTIVE);
-		else if(act.getStatusCode().getCode().equals(ActStatus.Completed))
+		} else if (act.getStatusCode().getCode().equals(ActStatus.Completed)) {
 			res.setStatus(Condition.Status.HISTORY_OF);
+		}
 
 		//save condition
 		Context.getService(ConditionService.class).save(res);
@@ -94,27 +94,22 @@ public class ConditionConcernEntryProcessor extends ConcernEntryProcessor {
 	 */
 	protected void updateItem(Condition res, Act act, ExtendedObs obs) throws DocumentImportException {
 		// Effective time?
-		if(act.getEffectiveTime() != null)
-		{
+		if (act.getEffectiveTime() != null) {
 			// Can only update start date if currentStatus is New or Active
-			if(act.getEffectiveTime().getLow() != null && !act.getEffectiveTime().getLow().isNull())
-			{
+			if ((act.getEffectiveTime().getLow() != null) && !act.getEffectiveTime().getLow().isNull()) {
 				// Does this report it to be prior to the currently known start date?
-				if(res.getOnsetDate() == null || act.getEffectiveTime().getLow().getDateValue().getTime().compareTo(res.getOnsetDate()) < 0)
-				{
+				if ((res.getOnsetDate() == null) || (act.getEffectiveTime().getLow().getDateValue().getTime().compareTo(res.getOnsetDate()) < 0)) {
 					res.setOnsetDate(act.getEffectiveTime().getLow().getDateValue().getTime());
 				}
 			}
-			if(act.getEffectiveTime().getHigh() != null && !act.getEffectiveTime().getHigh().isNull())
-			{
+			if ((act.getEffectiveTime().getHigh() != null) && !act.getEffectiveTime().getHigh().isNull()) {
 				// Does this report it to be after the currently known end date?
-				if(res.getEndDate() == null || act.getEffectiveTime().getHigh().getDateValue().getTime().compareTo(res.getEndDate()) > 0)
-				{
+				if ((res.getEndDate() == null) || (act.getEffectiveTime().getHigh().getDateValue().getTime().compareTo(res.getEndDate()) > 0)) {
 					res.setEndDate(act.getEffectiveTime().getHigh().getDateValue().getTime());
 				}
 			}
-		}
-		else if(act.getStatusCode().getCode() != ActStatus.Completed)
+		} else if (act.getStatusCode().getCode() != ActStatus.Completed) {
 			throw new DocumentImportException("Missing effective time of the problem");
+		}
 	}
 }

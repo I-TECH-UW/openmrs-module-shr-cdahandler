@@ -14,7 +14,16 @@
 package org.openmrs.module.shr.cdahandler.api.impl;
 
 import java.io.InputStream;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.Stack;
+
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -25,7 +34,14 @@ import org.marc.everest.interfaces.IResultDetail;
 import org.marc.everest.interfaces.ResultDetailType;
 import org.marc.everest.resultdetails.DatatypeValidationResultDetail;
 import org.marc.everest.rmim.uv.cdar2.pocd_mt000040uv.ClinicalDocument;
-import org.openmrs.*;
+import org.openmrs.Concept;
+import org.openmrs.ConceptMap;
+import org.openmrs.ConceptMapType;
+import org.openmrs.ConceptReferenceTerm;
+import org.openmrs.ConceptSource;
+import org.openmrs.Obs;
+import org.openmrs.Order;
+import org.openmrs.Visit;
 import org.openmrs.api.APIException;
 import org.openmrs.api.ConceptService;
 import org.openmrs.api.context.Context;
@@ -62,7 +78,7 @@ public class CdaImportServiceImpl extends BaseOpenmrsService implements CdaImpor
 	 * @see org.openmrs.module.shr.cdahandler.api.CdaImportService#importDocument(java.io.InputStream)
 	 */
 	@Override
-	public Visit importDocument(InputStream doc) throws DocumentImportException 
+	public Visit importDocument(InputStream doc) throws DocumentImportException
 	{
 		
 		// Formatter

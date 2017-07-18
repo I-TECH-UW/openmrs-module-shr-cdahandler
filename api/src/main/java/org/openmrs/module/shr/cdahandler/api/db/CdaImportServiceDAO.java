@@ -2,7 +2,11 @@ package org.openmrs.module.shr.cdahandler.api.db;
 
 import java.util.List;
 
-import org.openmrs.*;
+import org.openmrs.Concept;
+import org.openmrs.ConceptReferenceTerm;
+import org.openmrs.ConceptSource;
+import org.openmrs.Obs;
+import org.openmrs.Order;
 import org.openmrs.module.shr.cdahandler.obs.ExtendedObs;
 
 /**

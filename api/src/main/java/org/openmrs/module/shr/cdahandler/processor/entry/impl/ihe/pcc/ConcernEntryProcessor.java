@@ -11,11 +11,15 @@ import org.marc.everest.rmim.uv.cdar2.pocd_mt000040uv.EntryRelationship;
 import org.marc.everest.rmim.uv.cdar2.pocd_mt000040uv.Reference;
 import org.marc.everest.rmim.uv.cdar2.vocabulary.ActStatus;
 import org.marc.everest.rmim.uv.cdar2.vocabulary.x_ActRelationshipExternalReference;
-import org.openmrs.*;
+import org.openmrs.Allergy;
+import org.openmrs.BaseOpenmrsData;
+import org.openmrs.Condition;
+import org.openmrs.Encounter;
+import org.openmrs.Obs;
+import org.openmrs.Patient;
 import org.openmrs.api.context.Context;
 import org.openmrs.module.emrapi.conditionslist.ConditionService;
 import org.openmrs.module.shr.cdahandler.CdaHandlerConstants;
-import org.openmrs.module.shr.cdahandler.api.CdaImportService;
 import org.openmrs.module.shr.cdahandler.exception.DocumentImportException;
 import org.openmrs.module.shr.cdahandler.exception.DocumentValidationException;
 import org.openmrs.module.shr.cdahandler.exception.ValidationIssueCollection;
@@ -38,18 +42,19 @@ public class ConcernEntryProcessor extends ActEntryProcessor {
 	 * Calculate the current status
 	 */
 	public static ActStatus calculateCurrentStatus(Condition res) {
-		if(res.getOnsetDate() == null && res.getEndDate() == null)
+		if (res.getOnsetDate() == null && res.getEndDate() == null) {
 			return ActStatus.New;
-		else if(res.getOnsetDate() != null && res.getEndDate() == null)
+		} else if (res.getOnsetDate() != null && res.getEndDate() == null) {
 			return ActStatus.Active;
-		else if(res.getVoided() && res.getEndDate() != null)
+		} else if (res.getVoided() && res.getEndDate() != null) {
 			return ActStatus.Aborted;
-		else if(res.getVoided() && res.getEndDate() == null)
+		} else if (res.getVoided() && res.getEndDate() == null) {
 			return ActStatus.Suspended;
-		else if(res.getEndDate() != null)
+		} else if (res.getEndDate() != null) {
 			return ActStatus.Completed;
-		else
+		} else {
 			return null;
+		}
 	}
 
 	/**
@@ -69,93 +74,91 @@ public class ConcernEntryProcessor extends ActEntryProcessor {
 		BaseOpenmrsData previousItem = null;
 
 		// IS this a replacement?
-		for(Reference reference : act.getReference())
-			if(reference.getExternalActChoiceIfExternalAct() == null ||
-				!reference.getTypeCode().getCode().equals(x_ActRelationshipExternalReference.RPLC))
+		for (Reference reference : act.getReference()) {
+			if (reference.getExternalActChoiceIfExternalAct() == null ||
+					!reference.getTypeCode().getCode().equals(x_ActRelationshipExternalReference.RPLC)) {
 				continue;
-			else if(Allergy.class.isAssignableFrom(clazz))
+			} else if (Allergy.class.isAssignableFrom(clazz)) {
 				previousItem = this.m_dataUtil.findExistingAllergy(reference.getExternalActChoiceIfExternalAct().getId(), encounterInfo.getPatient());
-			else if(Condition.class.isAssignableFrom(clazz))
+			} else if (Condition.class.isAssignableFrom(clazz)) {
 				previousItem = this.m_dataUtil.findExistingCondition(reference.getExternalActChoiceIfExternalAct().getId(), encounterInfo.getPatient());
-
-		// Validate duplicates? This will work by AN and ID
-		if(act.getId() != null)
-		{
-			BaseOpenmrsData existingItem = null;
-			if(Allergy.class.isAssignableFrom(clazz))
-				existingItem = this.m_dataUtil.findExistingAllergy(act.getId(), encounterInfo.getPatient());
-			else if(Condition.class.isAssignableFrom(clazz))
-				existingItem = this.m_dataUtil.findExistingCondition(act.getId(), encounterInfo.getPatient());
-
-			// An replacement from the auto-replace
-			if(existingItem != null && this.m_configuration.getUpdateExisting())
-				previousItem = existingItem;
-			else if(existingItem != null)
-				throw new DocumentImportException(String.format("Duplicate list item %s. If you intend to replace it please use the replacement mechanism for CDA", FormatterUtil.toWireFormat(act.getId())));
+			}
 		}
 
+		// Validate duplicates? This will work by AN and ID
+		if (act.getId() != null) {
+			BaseOpenmrsData existingItem = null;
+			if (Allergy.class.isAssignableFrom(clazz)) {
+				existingItem = this.m_dataUtil.findExistingAllergy(act.getId(), encounterInfo.getPatient());
+			} else if (Condition.class.isAssignableFrom(clazz)) {
+				existingItem = this.m_dataUtil.findExistingCondition(act.getId(), encounterInfo.getPatient());
+			}
 
-//		// Try to load by observation?
-		if(previousItem == null && obs.getPreviousVersion() != null)
-		{
-			if(Condition.class.isAssignableFrom(clazz))
+			// An replacement from the auto-replace
+			if ((existingItem != null) && this.m_configuration.getUpdateExisting()) {
+				previousItem = existingItem;
+			} else if(existingItem != null) {
+				throw new DocumentImportException(String.format("Duplicate list item %s. If you intend to replace it please use the replacement mechanism for CDA", FormatterUtil.toWireFormat(act.getId())));
+			}
+		}
+
+		// Try to load by observation?
+		if (previousItem == null && obs.getPreviousVersion() != null) {
+			if (Condition.class.isAssignableFrom(clazz)) {
 				previousItem = getConditionByObs(obs, encounterInfo.getPatient());
-			else if(Allergy.class.isAssignableFrom(clazz))
+			} else if (Allergy.class.isAssignableFrom(clazz)) {
 				previousItem = getAllergyByObs(obs, encounterInfo.getPatient());
+			}
 		}
 
 		// Update the previous item
 		T res = (T)previousItem;
 
 		// Set base result properties
-		try
-		{
-			if(res == null)
+		try {
+			if (res == null) {
 				res = clazz.newInstance();
-        }
-        catch (Exception e) {
+			}
+        } catch (Exception e) {
         	throw new DocumentImportException("Could not create necessary class", e);
         }
-
 		// Set created or updated time
-		if(res.getDateCreated() == null)
+		if (res.getDateCreated() == null) {
 			res.setDateCreated(encounterInfo.getDateCreated());
-		else
+		} else {
 			res.setDateChanged(encounterInfo.getDateCreated());
-
+		}
 		// Void this?
-		if(act.getStatusCode().getCode() == ActStatus.Aborted ||
-				act.getStatusCode().getCode() == ActStatus.Suspended)
-		{
+		if (act.getStatusCode().getCode() == ActStatus.Aborted || act.getStatusCode().getCode() == ActStatus.Suspended) {
 			res.setVoided(true);
 			res.setVoidReason(act.getStatusCode().getCode().getCode());
 			res.setDateVoided(encounterInfo.getDateCreated());
 		}
-
 		// Copy attributes
-		if(Allergy.class.isAssignableFrom(clazz))
-			((Allergy)res).setPatient(encounterInfo.getPatient());
-		else if(Condition.class.isAssignableFrom(clazz))
-			((Condition)res).setPatient(encounterInfo.getPatient());
-
+		if (Allergy.class.isAssignableFrom(clazz)) {
+			((Allergy) res).setPatient(encounterInfo.getPatient());
+		} else if (Condition.class.isAssignableFrom(clazz)) {
+			((Condition) res).setPatient(encounterInfo.getPatient());
+		}
 		// Author
 		super.setCreator(res, act);
 		return res;
-
     }
 
     private BaseOpenmrsData getConditionByObs(Obs obs, Patient patient) {
-		for(Condition condition : Context.getService(ConditionService.class).getActiveConditions(patient)){
-			if(obs.getValueCoded().equals(condition.getConcept()))
+		for (Condition condition : Context.getService(ConditionService.class).getActiveConditions(patient)) {
+			if (obs.getValueCoded().equals(condition.getConcept())) {
 				return condition;
+			}
 		}
 		return null;
 	}
 
 	private BaseOpenmrsData getAllergyByObs(Obs obs, Patient patient) {
-    	for(Allergy allergy : Context.getPatientService().getAllergies(patient)){
-    		if(obs.getValueCoded().equals(allergy.getAllergen().getCodedAllergen()))
-    			return allergy;
+    	for (Allergy allergy : Context.getPatientService().getAllergies(patient)) {
+    		if (obs.getValueCoded().equals(allergy.getAllergen().getCodedAllergen())) {
+				return allergy;
+			}
 		}
 		return null;
 	}
@@ -202,11 +205,11 @@ public class ConcernEntryProcessor extends ActEntryProcessor {
 	public BaseOpenmrsData process(ClinicalStatement entry) throws DocumentImportException {
 		
 		// Validate
-		if(this.m_configuration.getValidationEnabled())
-		{
+		if (this.m_configuration.getValidationEnabled()) {
 			ValidationIssueCollection issues = this.validate(entry);
-			if(issues.hasErrors())
+			if (issues.hasErrors()) {
 				throw new DocumentValidationException(entry, issues);
+			}
 		}
 
 		// This is an interesting thought, according to the spec
@@ -216,13 +219,13 @@ public class ConcernEntryProcessor extends ActEntryProcessor {
 		//		  problem for each of the observations that exist. Ensuring that the 
 		// 		  the problem list item doesn't already exist via accession number?
 		Act act = (Act)entry;
-		for(EntryRelationship relationship : act.getEntryRelationship())
-		{
+		for (EntryRelationship relationship : act.getEntryRelationship()) {
 			
-			if(relationship == null || relationship.getNullFlavor() != null ||
+			if (relationship == null || relationship.getNullFlavor() != null ||
 					relationship.getClinicalStatement() == null ||
-					relationship.getClinicalStatement().getNullFlavor() != null)
+					relationship.getClinicalStatement().getNullFlavor() != null) {
 				continue;
+			}
 		
 			// Process the active list item
 			this.parseActContents(act, relationship.getClinicalStatement());
@@ -238,25 +241,29 @@ public class ConcernEntryProcessor extends ActEntryProcessor {
 	@Override
     public ValidationIssueCollection validate(IGraphable object) {
 	    ValidationIssueCollection validationIssues = super.validate(object);
-	    if(validationIssues.hasErrors()) return validationIssues;
+	    if (validationIssues.hasErrors()) {
+	    	return validationIssues;
+		}
 	    
 	    // Shall have a code with nullflavor NA
 	    Act act = (Act)object;
-	    if(act.getCode() != null && act.getCode().getNullFlavor().getCode() != NullFlavor.NotApplicable)
-	    	validationIssues.error("Act must carry a code with nullFlavor = 'NA'");
-	    if(act.getEffectiveTime() == null || act.getEffectiveTime().isNull())
-	    	validationIssues.error("Act must carry an effective time");
-	    else if(act.getEffectiveTime().getLow() == null || act.getEffectiveTime().getLow().isNull())
-	    	validationIssues.warn("Act's effectiveTime element must be populated with a Low value");
-	    else
-	    {
-	    	Boolean isHighNull = act.getEffectiveTime().getHigh() == null || act.getEffectiveTime().isNull();
-	    	ActStatus status = act.getStatusCode().getCode();
-	    	if(isHighNull && (status == ActStatus.Aborted || status == ActStatus.Completed))
-	    		validationIssues.error("Act's effectiveTime element must be populated with a High value when status code implies the act is completed (completed, aborted)");
-	    	else if(!isHighNull && (status == ActStatus.Active || status == ActStatus.Suspended))
-	    		validationIssues.error("Act's effectiveTime element must not be populated with a High value when status code implies the act is still ongoing (active, suspended)");
-	    }
+	    if (act.getCode() != null && act.getCode().getNullFlavor().getCode() != NullFlavor.NotApplicable) {
+			validationIssues.error("Act must carry a code with nullFlavor = 'NA'");
+		}
+
+	    if (act.getEffectiveTime() == null || act.getEffectiveTime().isNull()) {
+			validationIssues.error("Act must carry an effective time");
+		} else if (act.getEffectiveTime().getLow() == null || act.getEffectiveTime().getLow().isNull()) {
+			validationIssues.warn("Act's effectiveTime element must be populated with a Low value");
+		} else {
+			Boolean isHighNull = act.getEffectiveTime().getHigh() == null || act.getEffectiveTime().isNull();
+			ActStatus status = act.getStatusCode().getCode();
+			if (isHighNull && (status == ActStatus.Aborted || status == ActStatus.Completed)) {
+				validationIssues.error("Act's effectiveTime element must be populated with a High value when status code implies the act is completed (completed, aborted)");
+			} else if (!isHighNull && (status == ActStatus.Active || status == ActStatus.Suspended)) {
+				validationIssues.error("Act's effectiveTime element must not be populated with a High value when status code implies the act is still ongoing (active, suspended)");
+			}
+		}
 	    
 	    return validationIssues;
     }

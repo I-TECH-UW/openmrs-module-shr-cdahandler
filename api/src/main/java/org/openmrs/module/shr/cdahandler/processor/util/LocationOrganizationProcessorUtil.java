@@ -26,13 +26,13 @@ public final class LocationOrganizationProcessorUtil {
 	/**
 	 * Get the singleton instance
 	 */
-	public static LocationOrganizationProcessorUtil getInstance()
-	{
-		if(s_instance == null)
-		{
+	public static LocationOrganizationProcessorUtil getInstance() {
+		if(s_instance == null) {
 			synchronized (s_lockObject) {
 				if(s_instance == null) // Check to make sure another thread hasn't constructed
+				{
 					s_instance = new LocationOrganizationProcessorUtil();
+				}
 			}
 		}
 		return s_instance;
@@ -52,8 +52,7 @@ public final class LocationOrganizationProcessorUtil {
 	/**
 	 * Private ctor
 	 */
-	private LocationOrganizationProcessorUtil()
-	{
+	private LocationOrganizationProcessorUtil() {
 		
 	}
 
@@ -70,34 +69,36 @@ public final class LocationOrganizationProcessorUtil {
 	//		 of the organization.
 	private Location createLocation(Organization organization, String id) throws DocumentImportException {
 		
-		if(!this.m_configuration.getAutoCreateLocations())
+		if (!this.m_configuration.getAutoCreateLocations()) {
 			throw new IllegalStateException("Cannot create locations according to global properties");
+		}
 
 		Location res = new Location();
 		
-		
 		// Assign the name
-		if(organization.getName() != null && !organization.getName().isNull() && !organization.getName().isEmpty())
+		if (organization.getName() != null && !organization.getName().isNull() && !organization.getName().isEmpty()) {
 			res.setName(organization.getName().get(0).toString());
-		else
+		} else {
 			res.setName("unnamed location");
-		
+		}
+
 		res.setDescription("Automatically created");
 		
 		// Assign the telecom
-		if(organization.getAddr() != null && !organization.getAddr().isNull())
-		{
-			for(AD ad : organization.getAddr())
-				if(!ad.isNull())
+		if (organization.getAddr() != null && !organization.getAddr().isNull()) {
+			for (AD ad : organization.getAddr()) {
+				if (!ad.isNull()) {
 					this.parseAddressParts(ad, res);
+				}
+			}
 		}
 				
 		// Telecom?
-		if(organization.getTelecom() != null && !organization.getTelecom().isNull() )
-		{
-			for(TEL tel : organization.getTelecom())
-			{
-				if(tel.getValue() == null) continue;
+		if (organization.getTelecom() != null && !organization.getTelecom().isNull() ) {
+			for (TEL tel : organization.getTelecom()) {
+				if (tel.getValue() == null) {
+					continue;
+				}
 				LocationAttribute telecomAttribute = new LocationAttribute();
 				telecomAttribute.setAttributeType(this.m_metaDataUtil.getOrCreateLocationTelecomAttribute());
 				telecomAttribute.setValueReferenceInternal(String.format("%s: %s", FormatterUtil.toWireFormat(tel.getUse()), tel.getValue()));
@@ -106,8 +107,7 @@ public final class LocationOrganizationProcessorUtil {
 		}
 
 		// External id
-		if(!id.equals(this.m_datatypeUtil.emptyIdString()))
-		{
+		if (!id.equals(this.m_datatypeUtil.emptyIdString())) {
 			LocationAttribute externalId = new LocationAttribute();
 			externalId.setAttributeType(this.m_metaDataUtil.getOrCreateLocationExternalIdAttributeType());
 			externalId.setValueReferenceInternal(id);
@@ -127,11 +127,11 @@ public final class LocationOrganizationProcessorUtil {
 		// TODO: This is an organization not a location so we need to get all locations belonging to the organization
 		// TODO: For now this is stored just as a location with an externalId tag
 		// HACK: The function that does this natively in OpenMRS is missing from 1.9 and is available in 1.10
-		for(Location loc : Context.getLocationService().getAllLocations())
-		{
+		for (Location loc : Context.getLocationService().getAllLocations()) {
 			List<LocationAttribute> locAttributes = loc.getActiveAttributes(this.m_metaDataUtil.getOrCreateLocationExternalIdAttributeType());
-			if(locAttributes.size() == 1 && locAttributes.get(0).getValueReference().equals(id)) 
-				return loc; 
+			if (locAttributes.size() == 1 && locAttributes.get(0).getValueReference().equals(id)) {
+				return loc;
+			}
 		}
 		return  null;
 	}
@@ -142,8 +142,9 @@ public final class LocationOrganizationProcessorUtil {
 	private void parseAddressParts(AD addr, Location target) throws DocumentImportException {
 
 		// Empty
-		if(addr.getPart().size() == 0)
+		if (addr.getPart().size() == 0) {
 			return;
+		}
 		
 		// Create a person address and then copy
 		PersonAddress personAddress = this.m_datatypeUtil.parseAD(addr);
@@ -175,33 +176,34 @@ public final class LocationOrganizationProcessorUtil {
 	public Location processOrganization(CustodianOrganization representedCustodianOrganization) throws DocumentImportException {
 		
 		
-		if (representedCustodianOrganization == null || representedCustodianOrganization.getNullFlavor() != null)
+		if (representedCustodianOrganization == null || representedCustodianOrganization.getNullFlavor() != null) {
 			throw new DocumentImportException("CustodianOrganization role is null");
-		else if(representedCustodianOrganization.getId() == null || representedCustodianOrganization.getId().isNull() || representedCustodianOrganization.getId().isEmpty())
+		} else if (representedCustodianOrganization.getId() == null || representedCustodianOrganization.getId().isNull() || representedCustodianOrganization.getId().isEmpty()) {
 			throw new DocumentImportException("No identifiers found for organization");
+		}
 		
 		String id = this.m_datatypeUtil.formatIdentifier(representedCustodianOrganization.getId().get(0));
 		
 		Location res = null;
 
 		// Was there an id?
-		if (id.equals(this.m_datatypeUtil.emptyIdString())) 
+		if (id.equals(this.m_datatypeUtil.emptyIdString())) {
 			throw new DocumentImportException("No data specified for location id");
-		else
+		} else {
 			res = this.getOrganizationByExternalId(id);
+		}
 		
-		if (res==null && this.m_configuration.getAutoCreateLocations())
-		{
+		if (res==null && this.m_configuration.getAutoCreateLocations()) {
 			// Copy a CustodianOrganization to an Organization
 			SET<ON> name = new SET<ON>();
 			SET<TEL> tel = new SET<TEL>();
 			SET<AD> addr = new SET<AD>();
 			
-			if(representedCustodianOrganization.getName() != null)
+			if (representedCustodianOrganization.getName() != null)
 				name.add(representedCustodianOrganization.getName());
-			if(representedCustodianOrganization.getAddr() != null)
+			if (representedCustodianOrganization.getAddr() != null)
 				addr.add(representedCustodianOrganization.getAddr());
-			if(representedCustodianOrganization.getTelecom() != null)
+			if (representedCustodianOrganization.getTelecom() != null)
 				tel.add(representedCustodianOrganization.getTelecom());
 			Organization asOrganization = new Organization(
 				representedCustodianOrganization.getId(),
@@ -212,9 +214,9 @@ public final class LocationOrganizationProcessorUtil {
 				null
 			);
 			res = this.createLocation(asOrganization, id);
-		}
-		else if(res == null && !this.m_configuration.getAutoCreateLocations())
+		} else if(res == null && !this.m_configuration.getAutoCreateLocations()) {
 			throw new DocumentImportException(String.format("Unknown location %s", id));
+		}
 		return res;
     }
 
@@ -224,35 +226,34 @@ public final class LocationOrganizationProcessorUtil {
 	 */
 	public Location processOrganization(Organization organization) throws DocumentImportException {
 		
-		if (organization == null || organization.getNullFlavor() != null)
+		if (organization == null || organization.getNullFlavor() != null) {
 			throw new DocumentImportException("Organization role is null");
-		else if((organization.getId() == null || organization.getId().isNull() || organization.getId().isEmpty()) &&
-				(organization.getName() == null || organization.getName().isEmpty()))
+		} else if ((organization.getId() == null || organization.getId().isNull() || organization.getId().isEmpty()) &&
+				(organization.getName() == null || organization.getName().isEmpty())) {
 			throw new DocumentImportException("No identifying information found for organization");
+		}
 		
 		String id = this.m_datatypeUtil.emptyIdString();
 		
 		Location res = null;
 		// Find search criteria
-		if(organization.getId() != null)
-		{
+		if (organization.getId() != null) {
 			id = this.m_datatypeUtil.formatIdentifier(organization.getId().get(0));
 			log.debug(String.format("Finding organization by id %s", id));
 			res = this.getOrganizationByExternalId(id);
-		}
-		else if(organization.getName() != null && !organization.getName().isEmpty())
-		{
+		} else if(organization.getName() != null && !organization.getName().isEmpty()) {
 			String orgName = organization.getName().get(0).toString();
 			log.debug(String.format("Finding organization by name %s", orgName));
 			res = Context.getLocationService().getLocation(orgName);
-		}
-		else
+		} else {
 			throw new DocumentImportException("No data specified for location id");
+		}
 		
-		if (res==null && this.m_configuration.getAutoCreateLocations())
+		if (res==null && this.m_configuration.getAutoCreateLocations()) {
 			res = this.createLocation(organization, id);
-		else if(res == null && !this.m_configuration.getAutoCreateLocations())
+		} else if(res == null && !this.m_configuration.getAutoCreateLocations()) {
 			throw new DocumentImportException(String.format("Unknown location %s", id));
+		}
 		return res;
 		
     }
