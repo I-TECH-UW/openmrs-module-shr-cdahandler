@@ -110,8 +110,7 @@ public abstract class DocumentProcessorImpl implements DocumentProcessor {
 	{
 		
 		// Validate
-		if (this.m_configuration.getValidationEnabled())
-		{
+		if (this.m_configuration.getValidationEnabled()) {
 			ValidationIssueCollection issues = this.validate(doc);
 			if (issues.hasErrors()) {
 				throw new DocumentValidationException(doc, issues);

@@ -133,8 +133,7 @@ public class AllergiesAndIntolerancesConcernEntryProcessor extends ConcernEntryP
 		
 		// Are there manifestations (reactions)?
 		List<EntryRelationship> manifestationRelationship = this.findEntryRelationship(observation, CdaHandlerConstants.ENT_TEMPLATE_MANIFESTATION_RELATION);
-		if (manifestationRelationship.size() == 1) // Only if there is one
-		{
+		if (manifestationRelationship.size() == 1) { // Only if there is one
 			Observation manifestationObservation = manifestationRelationship.get(0).getClinicalStatementIfObservation();
 			// Get the concept
 			Concept reactionConcept = this.m_conceptUtil.getOrCreateConcept((CV)manifestationObservation.getValue());
