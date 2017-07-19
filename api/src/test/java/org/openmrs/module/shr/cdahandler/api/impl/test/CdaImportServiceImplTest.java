@@ -22,8 +22,8 @@ import org.openmrs.GlobalProperty;
 import org.openmrs.Obs;
 import org.openmrs.Patient;
 import org.openmrs.Visit;
-import org.openmrs.activelist.Problem;
 import org.openmrs.api.context.Context;
+import org.openmrs.module.emrapi.conditionslist.ConditionService;
 import org.openmrs.module.shr.cdahandler.CdaHandlerConstants;
 import org.openmrs.module.shr.cdahandler.api.CdaImportService;
 import org.openmrs.module.shr.cdahandler.configuration.CdaHandlerConfiguration;
@@ -52,7 +52,6 @@ public class CdaImportServiceImplTest extends BaseModuleContextSensitiveTest  {
 	@Before
 	public void beforeEachTest() throws Exception {
 
-		
 		this.m_service = Context.getService(CdaImportService.class);
 		GlobalProperty saveDir = new GlobalProperty(OpenmrsConstants.GLOBAL_PROPERTY_COMPLEX_OBS_DIR, "C:\\data\\");
 		Context.getAdministrationService().setGlobalProperty(CdaHandlerConfiguration.PROP_VALIDATE_CONCEPT_STRUCTURE, "false");
@@ -65,6 +64,7 @@ public class CdaImportServiceImplTest extends BaseModuleContextSensitiveTest  {
 		executeDataSet(ACTIVE_LIST_INITIAL_XML);
 		executeDataSet(CIEL_LIST_INITIAL_XML);
 		// TODO: Set properties
+
 	}
 	
 	/**
@@ -75,26 +75,21 @@ public class CdaImportServiceImplTest extends BaseModuleContextSensitiveTest  {
 		URL validAphpSample = this.getClass().getResource(resourceName);
 		File fileUnderTest = new File(validAphpSample.getFile());
 		FileInputStream fs = null;
-		try
-		{
+		try {
 			fs = new FileInputStream(fileUnderTest);
 			Visit parsedVisit = this.m_service.importDocument(fs);
 			assertEquals(parsedVisit, Context.getVisitService().getVisitByUuid(parsedVisit.getUuid()));
 			return parsedVisit.getUuid();
-		}
-		catch(DocumentValidationException e)
-		{
+		} catch(DocumentValidationException e) {
 			log.error(String.format("Error in %s", FormatterUtil.toWireFormat(((InfrastructureRoot)e.getTarget()).getTemplateId())));
-			for(IResultDetail dtl : e.getValidationIssues())
+			for (IResultDetail dtl : e.getValidationIssues()) {
 				log.error(String.format("%s %s", dtl.getType(), dtl.getMessage()));
+			}
 			return null;
-		}
-		catch(DocumentImportException e)
-		{
+		} catch(DocumentImportException e) {
 			log.error("Error generated", e);
 			return null;
-		}
-        catch (FileNotFoundException e) {
+		} catch (FileNotFoundException e) {
 	        // TODO Auto-generated catch block
 	        log.error("Error generated", e);
 	        return null;
@@ -132,7 +127,7 @@ public class CdaImportServiceImplTest extends BaseModuleContextSensitiveTest  {
 
 	@Test
 	public void shouldParseValidAphpFullTest() throws DocumentImportException {
-		
+
 		OpenmrsConceptUtil.getInstance().createConcept(new CV<String>("49051-6", CdaHandlerConstants.CODE_SYSTEM_LOINC), new PQ(BigDecimal.ONE, "wks"));
 		OpenmrsConceptUtil.getInstance().createConcept(new CV<String>("45371-2", CdaHandlerConstants.CODE_SYSTEM_LOINC), null);
 		String id = this.doParseCda("/validAphpSampleFullSections.xml");
@@ -148,11 +143,10 @@ public class CdaImportServiceImplTest extends BaseModuleContextSensitiveTest  {
 		String id = this.doParseCda("/validCdaLevel3Sample.xml");
 		id = this.doParseCda("/validCdaLevel3Sample.xml");
 		int nvc = 0;
-		
+
 		Patient patient = Context.getPatientService().getPatients("FirstName").get(0);
 		// Assert : Immunizations SHALL be replaced (there are 4 in each CDA therefore there should be 4 and not 8)
-		for(Obs ob : Context.getObsService().getObservationsByPersonAndConcept(patient, Context.getConceptService().getConcept(CdaHandlerConstants.CONCEPT_ID_IMMUNIZATION_HISTORY)))
-		{
+		for (Obs ob : Context.getObsService().getObservationsByPersonAndConcept(patient, Context.getConceptService().getConcept(CdaHandlerConstants.CONCEPT_ID_IMMUNIZATION_HISTORY))) {
 			assertTrue(ob.getPreviousVersion() != null);
 			nvc++;
 		}
@@ -160,8 +154,7 @@ public class CdaImportServiceImplTest extends BaseModuleContextSensitiveTest  {
 
 		nvc = 0;
 		// Assert : Medications SHALL be replaced (there are 4 in each CDA therefore there should be 4 and not 8)
-		for(Obs ob : Context.getObsService().getObservationsByPersonAndConcept(patient, Context.getConceptService().getConcept(CdaHandlerConstants.CONCEPT_ID_MEDICATION_HISTORY)))
-		{
+		for (Obs ob : Context.getObsService().getObservationsByPersonAndConcept(patient, Context.getConceptService().getConcept(CdaHandlerConstants.CONCEPT_ID_MEDICATION_HISTORY))) {
 			assertTrue(ob.getPreviousVersion() != null);
 			nvc++;
 		}
@@ -169,9 +162,7 @@ public class CdaImportServiceImplTest extends BaseModuleContextSensitiveTest  {
 
 
 		// Should have 5 problems not 10
-		assertEquals(5, Context.getActiveListService().getActiveListItems(patient, Problem.ACTIVE_LIST_TYPE).size());
-		
-	
+		assertEquals(5, Context.getService(ConditionService.class).getActiveConditions(patient).size());
 	}
 	
 	@Test

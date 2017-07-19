@@ -69,6 +69,15 @@
 			<version>1.1.0.v201004271650</version>
 		</dependency>
 
+		<!-- emrapi-condition-list Module -->
+		<dependency>
+			<groupId>org.openmrs.module</groupId>
+			<artifactId>emrapi-condition-list</artifactId>
+			<version>${emrapiConditionListVersion}</version>
+			<type>jar</type>
+			<scope>provided</scope>
+		</dependency>
+
 		<!-- Everest Dependencies -->
 		<dependency>
 			<groupId>org.marc.everest</groupId>

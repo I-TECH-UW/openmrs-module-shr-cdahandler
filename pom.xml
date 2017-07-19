@@ -33,14 +33,15 @@
 	</modules>
 	
 	<properties>
-		<openMRSVersion>1.11.5</openMRSVersion>
+		<openMRSVersion>2.0.5</openMRSVersion>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <contenthandlerVersion>3.0.1-SNAPSHOT</contenthandlerVersion>
+		<emrapiConditionListVersion>1.22.1</emrapiConditionListVersion>
 	</properties>
 
 	<dependencyManagement>
 		<dependencies>
-		
+
 			<!--
 			Libraries to add as dependencies with compile or runtime scope:
 			Find matching dependencies in the maven central repository.
@@ -108,8 +109,8 @@
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-compiler-plugin</artifactId>
 					<configuration>
-						<target>1.6</target>
-						<source>1.6</source>
+						<target>1.8</target>
+						<source>1.8</source>
 					</configuration>
 				</plugin>
 				<plugin>

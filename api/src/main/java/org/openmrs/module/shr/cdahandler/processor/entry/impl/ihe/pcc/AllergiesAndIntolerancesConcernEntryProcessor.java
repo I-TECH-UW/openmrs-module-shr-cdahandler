@@ -10,12 +10,12 @@ import org.marc.everest.rmim.uv.cdar2.pocd_mt000040uv.Act;
 import org.marc.everest.rmim.uv.cdar2.pocd_mt000040uv.ClinicalStatement;
 import org.marc.everest.rmim.uv.cdar2.pocd_mt000040uv.EntryRelationship;
 import org.marc.everest.rmim.uv.cdar2.pocd_mt000040uv.Observation;
+import org.openmrs.Allergen;
+import org.openmrs.AllergenType;
+import org.openmrs.Allergy;
+import org.openmrs.AllergyReaction;
 import org.openmrs.BaseOpenmrsData;
 import org.openmrs.Concept;
-import org.openmrs.activelist.ActiveListItem;
-import org.openmrs.activelist.Allergy;
-import org.openmrs.activelist.AllergySeverity;
-import org.openmrs.activelist.AllergyType;
 import org.openmrs.api.context.Context;
 import org.openmrs.module.shr.cdahandler.CdaHandlerConstants;
 import org.openmrs.module.shr.cdahandler.api.CdaImportService;
@@ -57,7 +57,7 @@ public class AllergiesAndIntolerancesConcernEntryProcessor extends ConcernEntryP
 	 * @see org.openmrs.module.shr.cdahandler.processor.entry.impl.ihe.pcc.ConcernEntryProcessor#parseActContents(org.marc.everest.rmim.uv.cdar2.pocd_mt000040uv.Act, org.openmrs.Obs)
 	 */
 	@Override
-    protected ActiveListItem parseActContents(Act act, ClinicalStatement statement) throws DocumentImportException {
+    protected void parseActContents(Act act, ClinicalStatement statement) throws DocumentImportException {
 		
 		// Get processor factory
 		EntryProcessor processor = EntryProcessorFactory.getInstance().createProcessor(statement);
@@ -66,79 +66,95 @@ public class AllergiesAndIntolerancesConcernEntryProcessor extends ConcernEntryP
 		BaseOpenmrsData processedData = processor.process(statement);
 
 		// Not an allergy so process like normal
-		if(!statement.getTemplateId().contains(new II(CdaHandlerConstants.ENT_TEMPLATE_ALLERGY_AND_INTOLERANCE_OBSERVATION)))
-			return null;
+		if (!statement.getTemplateId().contains(new II(CdaHandlerConstants.ENT_TEMPLATE_ALLERGY_AND_INTOLERANCE_OBSERVATION))) {
+			return;
+		}
 
 		// Get Some information that assists in processing
 		ExtendedObs obs = Context.getService(CdaImportService.class).getExtendedObs(processedData.getId());
 		Observation observation = (Observation)statement;
 		
 		// We don't track the allergy to an obs if we can help it..
-		Allergy res = super.createActiveListItem(act, statement, obs, Allergy.class);
-		res.setActiveListType(Allergy.ACTIVE_LIST_TYPE);
-		
-		// Populate allergy contents ... What is the allergy type?
-		if(observation.getCode().getCode().equals("FALG") ||
-				observation.getCode().getCode().equals("FINT") ||
-				observation.getCode().getCode().equals("FNAINT"))
-			res.setAllergyType(AllergyType.FOOD);
-		else if(observation.getCode().getCode().equals("DALG") ||
-				observation.getCode().getCode().equals("DINT") ||
-				observation.getCode().getCode().equals("DNAINT"))
-			res.setAllergyType(AllergyType.DRUG);
-		else if(observation.getCode().getCode().equals("EALG") ||
-				observation.getCode().getCode().equals("EINT") ||
-				observation.getCode().getCode().equals("ENAINT"))
-			res.setAllergyType(AllergyType.ENVIRONMENT);
-		else 
-			res.setAllergyType(AllergyType.OTHER);
-		
+		Allergy res = super.createItem(act, obs, Allergy.class);
+		if (res.getAllergen() == null) {
+			res.setAllergen(new Allergen());
+		}
+
 		// Now we have to dive into the allergen a little bit
-		if(observation.getParticipant().size() == 1 &&
+		if (observation.getParticipant().size() == 1 &&
 				observation.getParticipant().get(0).getParticipantRole() != null &&
 				observation.getParticipant().get(0).getParticipantRole().getPlayingEntityChoiceIfPlayingEntity() != null &&
-				observation.getParticipant().get(0).getParticipantRole().getPlayingEntityChoiceIfPlayingEntity().getCode() != null)
-			res.setAllergen(this.m_conceptUtil.getOrCreateConcept(observation.getParticipant().get(0).getParticipantRole().getPlayingEntityChoiceIfPlayingEntity().getCode()));
-		else if(obs.getValueCoded() != null)
-			res.setAllergen(obs.getValueCoded());
-		else
+				observation.getParticipant().get(0).getParticipantRole().getPlayingEntityChoiceIfPlayingEntity().getCode() != null) {
+			Concept concept = this.m_conceptUtil.getOrCreateConcept(observation.getParticipant().get(0).getParticipantRole().getPlayingEntityChoiceIfPlayingEntity().getCode());
+			res.getAllergen().setCodedAllergen(concept);
+		} else if (obs.getValueCoded() != null) {
+			Concept concept = obs.getValueCoded();
+			res.getAllergen().setCodedAllergen(concept);
+		} else {
 			throw new DocumentImportException("Allergen must be of type CD");
-				
+		}
+
+		// Populate allergy contents ... What is the allergy type?
+		if (observation.getCode().getCode().equals("FALG") ||
+				observation.getCode().getCode().equals("FINT") ||
+				observation.getCode().getCode().equals("FNAINT")) {
+			res.setAllergenType(AllergenType.FOOD);
+		} else if (observation.getCode().getCode().equals("DALG") ||
+				observation.getCode().getCode().equals("DINT") ||
+				observation.getCode().getCode().equals("DNAINT")) {
+			res.setAllergenType(AllergenType.DRUG);
+		} else if (observation.getCode().getCode().equals("EALG") ||
+				observation.getCode().getCode().equals("EINT") ||
+				observation.getCode().getCode().equals("ENAINT")) {
+			res.setAllergenType(AllergenType.ENVIRONMENT);
+		} else {
+			res.setAllergenType(AllergenType.OTHER);
+		}
+
 		// Set severity (if possible)
 		List<EntryRelationship> severityRelationship = this.findEntryRelationship(observation, CdaHandlerConstants.ENT_TEMPLATE_SEVERITY_OBSERVATION);
-		if(severityRelationship.size() == 1) // Only if there is one
+		if (severityRelationship.size() == 1) // Only if there is one
 		{
 			// Get the severity code
 			Observation severityObservation = severityRelationship.get(0).getClinicalStatementIfObservation();
 			CS<String> severityObservationValue = (CS<String>)severityObservation.getValue();
-			if(severityObservationValue.getCode().equals("L"))
-				res.setSeverity(AllergySeverity.MILD);
-			if(severityObservationValue.getCode().equals("M"))
-				res.setSeverity(AllergySeverity.MODERATE);			
-			if(severityObservationValue.getCode().equals("H"))
-					res.setSeverity(AllergySeverity.SEVERE);
+			if (severityObservationValue.getCode().equals("L")) {
+				res.setSeverity(getConceptByGlobalProperty("allergy.concept.severity.mild"));
+			} else if (severityObservationValue.getCode().equals("M")) {
+				res.setSeverity(getConceptByGlobalProperty("allergy.concept.severity.moderate"));
+			} else if (severityObservationValue.getCode().equals("H")) {
+				res.setSeverity(getConceptByGlobalProperty("allergy.concept.severity.severe"));
+			}
+		} else if (observation.getCode().getCode().endsWith("INT")) {
+			res.setSeverity(getConceptByGlobalProperty("allergy.concept.unknown"));
+		} else {
+			res.setSeverity(getConceptByGlobalProperty("allergy.concept.unknown"));
 		}
-		else if(observation.getCode().getCode().endsWith("INT"))
-			res.setSeverity(AllergySeverity.INTOLERANCE);
-		else
-			res.setSeverity(AllergySeverity.UNKNOWN);
 		
 		// Are there manifestations (reactions)?
 		List<EntryRelationship> manifestationRelationship = this.findEntryRelationship(observation, CdaHandlerConstants.ENT_TEMPLATE_MANIFESTATION_RELATION);
-		if(manifestationRelationship.size() == 1) // Only if there is one
-		{
+		if (manifestationRelationship.size() == 1) { // Only if there is one
 			Observation manifestationObservation = manifestationRelationship.get(0).getClinicalStatementIfObservation();
 			// Get the concept
-			Concept reaction = this.m_conceptUtil.getOrCreateConcept((CV)manifestationObservation.getValue());
-			res.setReaction(reaction);
-		}
-		else if(manifestationRelationship.size() > 1)
+			Concept reactionConcept = this.m_conceptUtil.getOrCreateConcept((CV)manifestationObservation.getValue());
+			if (reactionConcept != null) {
+				res.addReaction(new AllergyReaction(res, reactionConcept, null));
+			}
+		} else if (manifestationRelationship.size() > 1) {
 			throw new DocumentImportException("Allergy importer only supports one manifestation relationship");
-		
-		
-		return res;
+		}
+
+		//save allergy
+		Context.getPatientService().saveAllergy(res);
     }
-	
-	
+
+	private Concept getConceptByGlobalProperty(String globalPropertyName) {
+		String globalProperty = Context.getAdministrationService().getGlobalProperty(globalPropertyName);
+		Concept concept = Context.getConceptService().getConceptByUuid(globalProperty);
+		if (concept == null) {
+			throw new IllegalStateException("Configuration required: " + globalPropertyName);
+		}
+		return concept;
+	}
 	
 }
