@@ -213,7 +213,7 @@
 	<repositories>
 		<repository>
 			<id>marc-te-main</id>
-			<url>http://te.marc-hi.ca/mvn</url>
+			<url>https://te.marc-hi.ca/mvn</url>
 		</repository>
 	</repositories>
 	<pluginRepositories>
@@ -223,7 +223,7 @@
 			</snapshots>
 			<id>codehaus-mojo</id>
 			<name>CodeHaus Mojo</name>
-			<url>http://repo1.maven.org/maven2/org/codehaus/mojo</url>
+			<url>https://repo1.maven.org/maven2/org/codehaus/mojo</url>
 		</pluginRepository>
 	</pluginRepositories>
 
