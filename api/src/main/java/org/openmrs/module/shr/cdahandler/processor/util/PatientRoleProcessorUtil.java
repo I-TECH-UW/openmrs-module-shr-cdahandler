@@ -190,18 +190,10 @@ public final class PatientRoleProcessorUtil {
 			// Is there already an identifier with this type/extensions?
 			PatientIdentifier existingPid = res.getPatientIdentifier(pit);
 			// Already have an ID
-			if(existingPid != null && existingPid.getIdentifier().equals(pid.getIdentifier())) {
-				 continue;
-
-			}
-			
-			else if(existingPid != null){
-				
-				continue;
-
-			}
-			System.out.println("Testing the identifier #################################################################");
-			
+			if(existingPid != null && existingPid.getIdentifier().equals(pid.getIdentifier())) 
+			 continue;
+		
+			else if(existingPid != null)
 			
 			// Provider organization
 			if(importPatient.getProviderOrganization() != null && importPatient.getProviderOrganization().getId() != null)
