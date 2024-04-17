@@ -189,11 +189,11 @@ public final class PatientRoleProcessorUtil {
 
 			// Is there already an identifier with this type/extensions?
 			PatientIdentifier existingPid = res.getPatientIdentifier(pit);
-			if(existingPid != null && existingPid.getIdentifier().equals(pid.getIdentifier())) // Already have an ID
-				continue;
+			// Already have an ID
+			if(existingPid != null && existingPid.getIdentifier().equals(pid.getIdentifier())) 
+			 continue;
+		
 			else if(existingPid != null)
-				throw new DocumentImportException("Patient can only have one ID assigned from one authority: " +
-					existingPid.getIdentifierType().getName());
 			
 			// Provider organization
 			if(importPatient.getProviderOrganization() != null && importPatient.getProviderOrganization().getId() != null)
